@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\VSProjects"
+    "\\VSProjects",
+    "\\VSProjects\\applications_test"
   ],
+  "SelectedNode": "\\VSProjects\\applications_test\\applications_test.sln",
   "PreviewInSolutionExplorer": false
 }
