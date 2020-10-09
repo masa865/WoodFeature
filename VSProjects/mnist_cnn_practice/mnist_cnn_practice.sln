@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "mnist_cnn_practice", "mnist_cnn_practice\mnist_cnn_practice.pyproj", "{9970D2D3-FC12-4DC4-8594-57211F8890DA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9970D2D3-FC12-4DC4-8594-57211F8890DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9970D2D3-FC12-4DC4-8594-57211F8890DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EF41E272-3C99-49CF-8B06-B4ED87AAA93C}
+	EndGlobalSection
+EndGlobal
