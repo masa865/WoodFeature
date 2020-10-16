@@ -57,6 +57,10 @@ def cross_val(model,train_images,train_labels,ep=50,batchsize=32):
 #-------------test script--------------------------------------------
 if __name__ == "__main__":
 
+    from sklearn.datasets import make_classification
+    from sklearn.metrics import roc_curve
+    from sklearn.metrics import auc
+
     #root_path下のフォルダ名をラベルとするデータセットを作成する関数
     def make_dataset(root_path):
         #データセットのルートフォルダのPathオブジェクトを作成
@@ -82,8 +86,8 @@ if __name__ == "__main__":
         for path in all_image_paths:
             label = label_to_index[pathlib.Path(path).parent.name]
             all_image_labels.append(label)
-            for augment in range(7):
-                all_image_labels.append(label)
+            #for augment in range(7):
+            #    all_image_labels.append(label)
         np_labels = np.array(all_image_labels)
 
         #画像のデータセットを作成
@@ -95,22 +99,30 @@ if __name__ == "__main__":
             imgs.append(img)
 
             #回転で水増し
-            imgs.append(cv2.rotate(img,cv2.ROTATE_90_CLOCKWISE))
-            imgs.append(cv2.rotate(img,cv2.ROTATE_180))
-            imgs.append(cv2.rotate(img,cv2.ROTATE_90_COUNTERCLOCKWISE))
+            #imgs.append(cv2.rotate(img,cv2.ROTATE_90_CLOCKWISE))
+            #imgs.append(cv2.rotate(img,cv2.ROTATE_180))
+            #imgs.append(cv2.rotate(img,cv2.ROTATE_90_COUNTERCLOCKWISE))
             #反転して回転
-            rev_img = cv2.flip(img,1) #左右反転
-            imgs.append(rev_img)
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
+            #rev_img = cv2.flip(img,1) #左右反転
+            #imgs.append(rev_img)
+            #imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
+            #imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
+            #imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
 
 
         np_imgs = np.array(imgs)
 
         return np_imgs,np_labels
 
+    train_before_images,train_before_labels = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000')
     train_images,train_labels = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+
+    test_images = train_images[:int(len(train_images)*0.1)]
+    train_images = train_images[int(len(train_images)*0.1):]
+    test_labels = train_labels[:int(len(train_labels)*0.1)]
+    train_labels = train_labels[int(len(train_labels)*0.1):]
+
+    train_before_images = train_before_images.reshape(-1,64,64,3)
     train_images = train_images.reshape(-1,64,64,3)
     model = keras.Sequential([
         keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
@@ -129,24 +141,45 @@ if __name__ == "__main__":
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
-    loss,acc,val_loss,val_acc = cross_val(model,train_images,train_labels,ep=5,batchsize=32)
+    before_loss,before_acc,val_before_loss,val_before_acc = cross_val(model,train_before_images,train_before_labels,ep=5,batchsize=32)
+    loss,acc,val_loss,val_acc = cross_val(model,train_images,train_labels,ep=50,batchsize=32)
 
     #plot training & validation loss values
-    plt.plot(loss)
-    plt.plot(val_loss)
+    plt.plot(before_loss,color='blue',  linestyle='solid')
+    plt.plot(val_before_loss,color='blue',  linestyle='dashed')
+
+    plt.plot(loss,color='red',  linestyle='solid')
+    plt.plot(val_loss,color='red',  linestyle='dashed')
+
     plt.title('Model loss')
-    plt.ylabel('Loss(binary cross enrropy)')
+    plt.ylabel('Loss(binary cross entropy)')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.legend(['Train', 'Val','Cleansed_Train','Cleansed_Val'], loc='upper left')
     plt.show()
 
     #plot training & validation acces
-    plt.plot(acc)
-    plt.plot(val_acc)
+    plt.plot(before_acc,color='blue',linestyle='solid')
+    plt.plot(val_before_acc,color='blue',linestyle='dashed')
+
+    plt.plot(acc,color='red',  linestyle='solid')
+    plt.plot(val_acc,color='red',  linestyle='dashed')
     plt.title('Model accuracy')
-    plt.ylabel('accuracy')
+    plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.legend(['Train', 'Val','Cleansed_Train','Cleansed_Val'], loc='upper left')
+    plt.show()
+
+    #plot roc curve
+    y_pred_keras = model.predict(test_images).ravel()
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_labels, y_pred_keras)
+    auc_keras = auc(fpr_keras, tpr_keras)
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.plot(fpr_keras, tpr_keras, label='Cleansed data(area = {:.3f})'.format(auc_keras))
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve')
+    plt.legend(loc='best')
     plt.show()
 
 
