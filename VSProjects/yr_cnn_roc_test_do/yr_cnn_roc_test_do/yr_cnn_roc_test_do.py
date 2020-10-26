@@ -73,7 +73,7 @@ def make_dataset(root_path):
     return np_imgs,np_labels
 
 #訓練データセット作成
-train_images,train_labels = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000')
+train_images,train_labels = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
 #テストデータセット作成
 #test_images,test_labels = make_dataset(r'E:\traning_data(murakami)\yr_dataset_test\test')
 

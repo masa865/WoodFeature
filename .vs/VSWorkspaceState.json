@@ -2,8 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\VSProjects",
-    "\\VSProjects\\applications_test"
+    "\\VSProjects\\applications_test",
+    "\\VSProjects\\yr_cnn_roc_test_do"
   ],
-  "SelectedNode": "\\VSProjects\\applications_test\\applications_test.sln",
+  "SelectedNode": "\\VSProjects",
   "PreviewInSolutionExplorer": false
 }
