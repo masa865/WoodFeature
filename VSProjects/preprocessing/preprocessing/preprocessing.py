@@ -9,7 +9,7 @@ def preprocess(img_bgr):
     return img_prep
 
 
-#test code for this function
+#test code for this module
 if __name__ == '__main__':
     img = cv2.imread(r"C:\Users\sirim\Pictures\new\deru.jpg")
     img_prep = preprocess(img)
