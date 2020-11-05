@@ -2,15 +2,13 @@
 import tensorflow as tf
 from tensorflow import keras
 
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pathlib
 import random
+
 import cv2
 
 def cross_val(model,train_images,train_labels,ep=50,batchsize=32):
@@ -54,8 +52,12 @@ def cross_val(model,train_images,train_labels,ep=50,batchsize=32):
 
     return ave_all_loss,ave_all_acc,ave_all_val_loss,ave_all_val_acc
 
-#-------------test script--------------------------------------------
+
+#-------------test code for this module--------------------------------------------
 if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
 
     from sklearn.datasets import make_classification
     from sklearn.metrics import roc_curve

@@ -5,7 +5,7 @@ import sys
 import random
 
 #add noise function for making test image
-def add_noise(I_t,MEAN = 0.0,STD = 15.0):
+def add_noise(I_t,MEAN = 0.0,STD = 20.0):
 
     #-----------------------------------------------------
     #I_t  :Image to add noise(1 channel gray scale)
@@ -41,7 +41,7 @@ def shrink(x,y):
     return S
 
 #Total Variation (Split Bregman method)
-def tvDenoiseSB(img,CYCLE=100,MU=0.2,LAMBDA=0.1,TOL=5):
+def tvDenoiseSB(img,CYCLE=150,MU=0.1,LAMBDA=0.3,TOL=5):
 
     if(img.ndim != 2): #input error
         print('tvDenoiseSB() assumes input of 1-channel grayscale image.')
@@ -130,7 +130,7 @@ def tvDenoise(img,lamda=0.3,timestep=0.01):
 #test code for this module
 if __name__ == '__main__':
 
-    img_load = cv2.imread(r"C:\Users\sirim\Pictures\new\Lenna.bmp")
+    img_load = cv2.imread(r"C:\Users\sirim\Pictures\new\lenna.bmp")
 
     #plot original image
     I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
@@ -150,7 +150,9 @@ if __name__ == '__main__':
     im_h = cv2.hconcat([cv2.hconcat([I_t, f]),r])
     cv2.imshow("concat",im_h)
     cv2.waitKey(0)
-    ##cv2.imwrite(r'C:\Users\sirim\Pictures\new\output\im_h_2.bmp',im_h)
+    
+    #save image
+    cv2.imwrite(r'C:\Users\sirim\Pictures\new\output\lenna_conc.bmp',im_h)
 
 
 
