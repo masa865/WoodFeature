@@ -87,7 +87,7 @@ def testNet(inputs,imsize=64,channel=1):
     x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
     x = keras.layers.Dense(64, activation='relu')(x)
-    x = keras.layers.Dropout(0.3)(x)
+    #x = keras.layers.Dropout(0.2)(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
