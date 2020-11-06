@@ -84,8 +84,10 @@ def testNet(inputs,imsize=64,channel=1):
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
+    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
-    #x = keras.layers.Dense(64, activation='relu')(x)
+    x = keras.layers.Dense(64, activation='relu')(x)
+    x = keras.layers.Dropout(0.3)(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
@@ -117,13 +119,17 @@ if __name__ == '__main__':
 
     #setting model
     #base_model = baseLineNet(train_images)
-    model = testNet(train_images)
+    model = testNet(train_images,64,1)
+
+    model.summary()
 
     model.compile(optimizer='adam',
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
     #cross validation
+    ep=100
+    batchsize=32
     kf = KFold(n_splits=5, shuffle=True)
 
     all_loss=[]
@@ -183,5 +189,5 @@ if __name__ == '__main__':
     plt.show()
 
     #save model
-    model.save('base_model.h5')
+    #model.save('base_model.h5')
     model.save('test_model.h5')
