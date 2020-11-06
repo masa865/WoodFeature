@@ -38,6 +38,7 @@ def make_dataset(root_path):
         #img = img / 255.0 #normalization
         img = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
         imgs.append(img)
+
         np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
@@ -85,7 +86,8 @@ def testNet(inputs,imsize=64,channel=1):
     x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Flatten()(x)
-    #x = keras.layers.Dense(64, activation='relu')(x)
+    x = keras.layers.Dense(64, activation='relu')(x)
+    #x = keras.layers.Dropout(0.2)(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
