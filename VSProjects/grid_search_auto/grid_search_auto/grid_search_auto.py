@@ -5,10 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pathlib
 import random
+import os
+import csv
 
 import cv2
-
-from sklearn.model_selection import GridSearchCV
 
 #function that creates a dataset labeled with the folder name under root_path
 def make_dataset(root_path):
@@ -49,12 +49,25 @@ def make_dataset(root_path):
 def gridSearch(train_data,train_label,val_data,val_label,
               activation,optimizer,out_dim,epoch,batch_size): #parameter lists
 
+    acc_target = 0.95
+
+    if not (os.path.exists('result')):
+        os.mkdir('result')
+    path = 'result/result.csv'
+    if os.path.exists(path):
+        os.remove(path)
+
+    with open(path,'a',newline='') as c:
+        writer = csv.writer(c)
+        writer.writerow(['activation','optimizer','out_dim','epoch','batch_size','maxValAcc'])
+
+
     for ac in activation:
         for op in optimizer:
             for ou in out_dim:
                 for ep in epoch:
                     for ba in batch_size:
-                        #model
+                        #--Model definition part----------------------------------------------
                         inputs = keras.layers.Input(shape=(64,64,1))
                         x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(inputs)
                         x = keras.layers.MaxPooling2D((2, 2))(x)
@@ -65,6 +78,7 @@ def gridSearch(train_data,train_label,val_data,val_label,
                         x = keras.layers.Dense(ou, activation='relu')(x)
                         out = keras.layers.Dense(1, activation=ac)(x)
                         model = keras.Model(inputs=inputs,outputs=out)
+                        #---------------------------------------------------------------------
 
                         #compile
                         model.compile(optimizer=op,
@@ -78,7 +92,7 @@ def gridSearch(train_data,train_label,val_data,val_label,
                             batch_size=ba,
                             validation_data=(val_data,val_label))
 
-                        #plot training & validation loss values
+                        #save training & validation loss values
                         plt.figure()
                         plt.plot(history.history['loss'])
                         plt.plot(history.history['val_loss'])
@@ -86,19 +100,23 @@ def gridSearch(train_data,train_label,val_data,val_label,
                         plt.ylabel('Loss')
                         plt.xlabel('Epoch')
                         plt.legend(['Train', 'Val'], loc='upper left')
-                        #plt.show()
-                        plt.savefig('Loss_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+                        plt.savefig('result/Loss_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
 
-                        #plot training & validation acces
+                        #save training & validation acces
                         plt.figure()
                         plt.plot(history.history['accuracy'])
                         plt.plot(history.history['val_accuracy'])
+                        plt.hlines(acc_target,0,ep, "blue", linestyles='dashed')
                         plt.title('Model accuracy')
                         plt.ylabel('accuracy')
                         plt.xlabel('Epoch')
                         plt.legend(['Train', 'Val'], loc='upper left')
-                        #plt.show()
-                        plt.savefig('Acc_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+                        plt.savefig('result/Acc_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+
+                        #write result
+                        with open(path,'a',newline='') as c:
+                             writer = csv.writer(c)
+                             writer.writerow([ac,op,ou,ep,ba,max(history.history['val_accuracy'])])
 
     return model
 
