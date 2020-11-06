@@ -38,6 +38,7 @@ def make_dataset(root_path):
         #img = img / 255.0 #normalization
         img = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
         imgs.append(img)
+
         np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
