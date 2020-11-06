@@ -84,9 +84,8 @@ def testNet(inputs,imsize=64,channel=1):
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(64, activation='relu')(x)
+    #x = keras.layers.Dense(64, activation='relu')(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
@@ -95,29 +94,93 @@ def testNet(inputs,imsize=64,channel=1):
 
 #test code for this module
 if __name__ == '__main__':
+
+    from sklearn.model_selection import KFold
+    from sklearn.model_selection import train_test_split
     
     #import data
-    (load_images,load_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
 
     #divide into training data and test data(90%:10%)
-    test_images = load_images[:int(len(load_images)*0.1)]
-    train_images = load_images[int(len(load_images)*0.1):]
-    test_labels = load_labels[:int(len(load_labels)*0.1)]
-    train_labels = load_labels[int(len(load_labels)*0.1):]
+    #test_images = load_images[:int(len(load_images)*0.1)]
+    #train_images = load_images[int(len(load_images)*0.1):]
+    #test_labels = load_labels[:int(len(load_labels)*0.1)]
+    #train_labels = load_labels[int(len(load_labels)*0.1):]
 
     #normalization
     train_images = train_images / 255.0
-    test_images = test_images / 255.0
+    #test_images = test_images / 255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
-    test_images = test_images.reshape(-1,64,64,1)
+    #test_images = test_images.reshape(-1,64,64,1)
 
     #setting model
-    base_model = baseLineNet(train_images)
-    test_model = testNet(train_images)
+    #base_model = baseLineNet(train_images)
+    model = testNet(train_images)
 
-    #learning
+    model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+    #cross validation
+    kf = KFold(n_splits=5, shuffle=True)
+
+    all_loss=[]
+    all_val_loss=[]
+    all_acc=[]
+    all_val_acc=[]
+    
+    for train_index,val_index in kf.split(train_images,train_labels):
+        train_data=train_images[train_index]
+        train_label=train_labels[train_index]
+        val_data=train_images[val_index]
+        val_label=train_labels[val_index]
+
+        history=model.fit(train_data,
+                      train_label,
+                      epochs=ep,
+                      batch_size=batchsize,
+                      validation_data=(val_data,val_label))
+
+        loss=history.history['loss']
+        val_loss=history.history['val_loss']
+        acc=history.history['accuracy']
+        val_acc=history.history['val_accuracy']
+
+        all_loss.append(loss)
+        all_val_loss.append(val_loss)
+        all_acc.append(acc)
+        all_val_acc.append(val_acc)
+
+        ave_all_loss=[
+            np.mean([x[i] for x in all_loss]) for i in range(ep)]
+        ave_all_val_loss=[
+            np.mean([x[i] for x in all_val_loss]) for i in range(ep)]
+        ave_all_acc=[
+            np.mean([x[i] for x in all_acc]) for i in range(ep)]
+        ave_all_val_acc=[
+            np.mean([x[i] for x in all_val_acc]) for i in range(ep)]
+
+    #plot training & validation loss values
+    plt.plot(ave_all_loss,color='blue',  linestyle='solid')
+    plt.plot(ave_all_val_loss,color='blue',  linestyle='dashed')
+
+    plt.title('Model loss')
+    plt.ylabel('Loss(binary cross entropy)')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.show()
+
+    #plot training & validation acces
+    plt.plot(ave_all_acc,color='blue',linestyle='solid')
+    plt.plot(ave_all_val_acc,color='blue',linestyle='dashed')
+
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.show()
 
     #save model
     model.save('base_model.h5')
