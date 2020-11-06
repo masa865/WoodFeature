@@ -46,20 +46,59 @@ def make_dataset(root_path):
     return (np_imgs,np_labels)
 
 #Model
-def testNet(activation="sigmoid", optimizer="adam", out_dim=64):
+def gridSearch(train_data,train_label,val_data,val_label,
+              activation,optimizer,out_dim,epoch,batch_size): #parameter lists
 
-    inputs = keras.layers.Input(shape=(imsize,imsize,channel))
-    x = keras.layers.Conv2D(out_dim, (3, 3), activation='relu')(inputs)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(out_dim, (3, 3), activation='relu')(x)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(out_dim, activation='relu')(x)
-    out = keras.layers.Dense(1, activation=activation)(x)
-    model = keras.Model(inputs=inputs,outputs=out)
+    for ac in activation:
+        for op in optimizer:
+            for ou in out_dim:
+                for ep in epoch:
+                    for ba in batch_size:
+                        #model
+                        inputs = keras.layers.Input(shape=(64,64,1))
+                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(inputs)
+                        x = keras.layers.MaxPooling2D((2, 2))(x)
+                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+                        x = keras.layers.MaxPooling2D((2, 2))(x)
+                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+                        x = keras.layers.Flatten()(x)
+                        x = keras.layers.Dense(ou, activation='relu')(x)
+                        out = keras.layers.Dense(1, activation=ac)(x)
+                        model = keras.Model(inputs=inputs,outputs=out)
 
-    model.compile(optimizer=optimizer,loss='binary_crossentropy',
-              metrics=['accuracy'])
+                        #compile
+                        model.compile(optimizer=op,
+                            loss='binary_crossentropy',
+                            metrics=['accuracy'])
+
+                        #fit
+                        history=model.fit(train_data,
+                            train_label,
+                            epochs=ep,
+                            batch_size=ba,
+                            validation_data=(val_data,val_label))
+
+                        #plot training & validation loss values
+                        plt.figure()
+                        plt.plot(history.history['loss'])
+                        plt.plot(history.history['val_loss'])
+                        plt.title('Model loss')
+                        plt.ylabel('Loss')
+                        plt.xlabel('Epoch')
+                        plt.legend(['Train', 'Val'], loc='upper left')
+                        #plt.show()
+                        plt.savefig('Loss_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+
+                        #plot training & validation acces
+                        plt.figure()
+                        plt.plot(history.history['accuracy'])
+                        plt.plot(history.history['val_accuracy'])
+                        plt.title('Model accuracy')
+                        plt.ylabel('accuracy')
+                        plt.xlabel('Epoch')
+                        plt.legend(['Train', 'Val'], loc='upper left')
+                        #plt.show()
+                        plt.savefig('Acc_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
 
     return model
 
@@ -69,43 +108,29 @@ if __name__ == '__main__':
     #parameter for grid search
     activation = ["sigmoid"]
     optimizer = ["adam"]
-    out_dim = [16,32,64]
-    nb_epoch = [100]
-    batch_size = [32,64,128]
-
-    test_model = testNet()
-    model = keras.wrappers.scikit_learn.KerasClassifier(build_fn=test_model,n_jobs=-1)
-
-    param_grid = dict(activation=activation, 
-                  optimizer=optimizer, 
-                  out_dim=out_dim, 
-                  nb_epoch=nb_epoch, 
-                  batch_size=batch_size)
-    grid = GridSearchCV(estimator=model, param_grid=param_grid)
+    out_dim = [16,32]
+    nb_epoch = [10,20]
+    batch_size = [32]
     
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+    (load_images,load_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
 
     #divide into training data and test data(90%:10%)
-    #test_images = load_images[:int(len(load_images)*0.1)]
-    #train_images = load_images[int(len(load_images)*0.1):]
-    #test_labels = load_labels[:int(len(load_labels)*0.1)]
-    #train_labels = load_labels[int(len(load_labels)*0.1):]
+    test_images = load_images[:int(len(load_images)*0.1)]
+    train_images = load_images[int(len(load_images)*0.1):]
+    test_labels = load_labels[:int(len(load_labels)*0.1)]
+    train_labels = load_labels[int(len(load_labels)*0.1):]
 
     #normalization
     train_images = train_images / 255.0
-    #test_images = test_images / 255.0
+    test_images = test_images / 255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
-    #test_images = test_images.reshape(-1,64,64,1)
+    test_images = test_images.reshape(-1,64,64,1)
 
-    #setting model
-    #base_model = baseLineNet(train_images)
-    model = testNet(train_images)
-
-    grid_result = grid.fit(train_images, train_labels)
-    print (grid_result.best_score_)
-    print (grid_result.best_params_)
+    #learn
+    model = gridSearch(train_images,train_labels,test_images,test_labels,
+                       activation,optimizer,out_dim,nb_epoch,batch_size)
 
     
