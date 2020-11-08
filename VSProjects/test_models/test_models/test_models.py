@@ -78,7 +78,7 @@ def baseLineNet(inputs,imsize=64,channel=1):
     return model
 
 #test net
-def testNet(inputs,imsize=64,channel=1):
+def testNet(imsize=64,channel=1):
 
     inputs = keras.layers.Input(shape=(imsize,imsize,channel))
     x = keras.layers.Conv2D(32, (3, 3), activation='relu')(inputs)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     #setting model
     #base_model = baseLineNet(train_images)
-    model = testNet(train_images,64,1)
+    model = testNet(64,1)
 
     model.summary()
 
