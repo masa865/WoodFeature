@@ -2,8 +2,8 @@
 import tensorflow as tf
 from tensorflow import keras
 
-from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 import numpy as np
 import pathlib
@@ -11,46 +11,55 @@ import random
 
 import cv2
 
-def cross_val(model,train_images,train_labels,ep=50,batchsize=32):
-    kf = KFold(n_splits=5, shuffle=True)
+def getModel():
+    model = keras.Sequential([
+        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        keras.layers.Flatten(),
+        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dense(1, activation='sigmoid')
+    ])
 
-    all_loss=[]
-    all_val_loss=[]
-    all_acc=[]
-    all_val_acc=[]
+    return model
+
+def crossVal(train_images,train_labels,fold_num=5,batch_size=32,epochs=50):
+    # fix random seed for reproducibility
+    seed = 7
+    np.random.seed(seed)
+
+    # define X-fold cross validation
+    kfold = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=seed)
+    cvscores = []
+
+    X=train_images
+    Y=train_labels
+
+    for train, test in kfold.split(X,Y):
+        # create model
+        model = getModel()
+
+        model.compile(optimizer='adam',
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+        # Fit the model
+        model.fit(X[train], Y[train],
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        verbose=1)
+
+
+        # Evaluate
+        scores = model.evaluate(X[test], Y[test], verbose=0)
+        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+        cvscores.append(scores[1] * 100)
+
+    print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
     
-    for train_index,val_index in kf.split(train_images,train_labels):
-        train_data=train_images[train_index]
-        train_label=train_labels[train_index]
-        val_data=train_images[val_index]
-        val_label=train_labels[val_index]
-
-        history=model.fit(train_data,
-                      train_label,
-                      epochs=ep,
-                      batch_size=batchsize,
-                      validation_data=(val_data,val_label))
-
-        loss=history.history['loss']
-        val_loss=history.history['val_loss']
-        acc=history.history['accuracy']
-        val_acc=history.history['val_accuracy']
-
-        all_loss.append(loss)
-        all_val_loss.append(val_loss)
-        all_acc.append(acc)
-        all_val_acc.append(val_acc)
-
-        ave_all_loss=[
-            np.mean([x[i] for x in all_loss]) for i in range(ep)]
-        ave_all_val_loss=[
-            np.mean([x[i] for x in all_val_loss]) for i in range(ep)]
-        ave_all_acc=[
-            np.mean([x[i] for x in all_acc]) for i in range(ep)]
-        ave_all_val_acc=[
-            np.mean([x[i] for x in all_val_acc]) for i in range(ep)]
-
-    return ave_all_loss,ave_all_acc,ave_all_val_loss,ave_all_val_acc
+    return np.mean(cvscores),np.std(cvscores)
 
 
 #-------------test code for this module--------------------------------------------
@@ -126,63 +135,8 @@ if __name__ == "__main__":
 
     train_before_images = train_before_images.reshape(-1,64,64,3)
     train_images = train_images.reshape(-1,64,64,3)
-    model = keras.Sequential([
-        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.Conv2D(64, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.Conv2D(64, (3, 3), activation='relu'),
-        keras.layers.Flatten(),
-        keras.layers.Dense(64, activation='relu'),
-        keras.layers.Dense(1, activation='sigmoid')
-    ])
 
-    model.summary()
-
-    model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-
-    before_loss,before_acc,val_before_loss,val_before_acc = cross_val(model,train_before_images,train_before_labels,ep=5,batchsize=32)
-    loss,acc,val_loss,val_acc = cross_val(model,train_images,train_labels,ep=50,batchsize=32)
-
-    #plot training & validation loss values
-    plt.plot(before_loss,color='blue',  linestyle='solid')
-    plt.plot(val_before_loss,color='blue',  linestyle='dashed')
-
-    plt.plot(loss,color='red',  linestyle='solid')
-    plt.plot(val_loss,color='red',  linestyle='dashed')
-
-    plt.title('Model loss')
-    plt.ylabel('Loss(binary cross entropy)')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val','Cleansed_Train','Cleansed_Val'], loc='upper left')
-    plt.show()
-
-    #plot training & validation acces
-    plt.plot(before_acc,color='blue',linestyle='solid')
-    plt.plot(val_before_acc,color='blue',linestyle='dashed')
-
-    plt.plot(acc,color='red',  linestyle='solid')
-    plt.plot(val_acc,color='red',  linestyle='dashed')
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val','Cleansed_Train','Cleansed_Val'], loc='upper left')
-    plt.show()
-
-    #plot roc curve
-    y_pred_keras = model.predict(test_images).ravel()
-    fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_labels, y_pred_keras)
-    auc_keras = auc(fpr_keras, tpr_keras)
-    plt.figure(1)
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.plot(fpr_keras, tpr_keras, label='Cleansed data(area = {:.3f})'.format(auc_keras))
-    plt.xlabel('False positive rate')
-    plt.ylabel('True positive rate')
-    plt.title('ROC curve')
-    plt.legend(loc='best')
-    plt.show()
+    score_mean,score_std = crossVal(train_images,train_labels)
 
 
 
