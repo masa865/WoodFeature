@@ -47,15 +47,15 @@ def make_dataset(root_path):
 
     return (np_imgs,np_labels)
 
-def getModel(ac,ou):
+def getModel(ac,ou1,ou2,ou3,ou4):
     inputs = keras.layers.Input(shape=(64,64,1))
-    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(inputs)
+    x = keras.layers.Conv2D(ou1, (3, 3), activation='relu')(inputs)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+    x = keras.layers.Conv2D(ou2, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+    x = keras.layers.Conv2D(ou3, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(ou, activation='relu')(x)
+    x = keras.layers.Dense(ou4, activation='relu')(x)
     out = keras.layers.Dense(1, activation=ac)(x)
     model = keras.Model(inputs=inputs,outputs=out)
 
@@ -63,7 +63,7 @@ def getModel(ac,ou):
 
 #Model
 def gridSearch(train_data,train_label,
-              activation,optimizer,epochs,batch_size,out_dim): #parameter lists
+              activation,optimizer,epochs,batch_size,out_dim1,out_dim2,out_dim3,out_dim4): #parameter lists
 
     if not (os.path.exists('result')):
         os.mkdir('result')
@@ -73,7 +73,8 @@ def gridSearch(train_data,train_label,
 
     with open(path,'a',newline='') as c:
         writer = csv.writer(c)
-        writer.writerow(['activation','optimizer','epochs','batch_size','out_dim','CV_ACC','CV_STD'])
+        writer.writerow(['activation','optimizer','epochs','batch_size','out_dim1','out_dim2','out_dim3','out_dim4',
+                         'CV_ACC','CV_STD'])
 
     # fix random seed for reproducibility
     seed = 7
@@ -81,7 +82,6 @@ def gridSearch(train_data,train_label,
 
     # define X-fold cross validation
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
-    cvscores = []
 
     X=train_data
     Y=train_label
@@ -90,47 +90,55 @@ def gridSearch(train_data,train_label,
         for op in optimizer:
             for ep in epochs:
                 for ba in batch_size:
-                    for ou in out_dim:
-                        #cross validation
-                        for train, test in kfold.split(X,Y):
-                            # create model
-                            model = getModel(ac,ou)
+                    for ou1 in out_dim1:
+                        for ou2 in out_dim2:
+                            for ou3 in out_dim3:
+                                for ou4 in out_dim4:
+                                    #cross validation
+                                    cvscores = []
+                                    for train, test in kfold.split(X,Y):
+                                        # create model
+                                        model = getModel(ac,ou1,ou2,ou3,ou4)
 
-                            model.compile(optimizer=op,
-                                  loss='binary_crossentropy',
-                                  metrics=['accuracy'])
+                                        model.compile(optimizer=op,
+                                                loss='binary_crossentropy',
+                                                metrics=['accuracy'])
 
-                            # Fit the model
-                            model.fit(X[train], Y[train],
-                                            batch_size=ba,
-                                            epochs=ep,
-                                            verbose=1)
+                                        # Fit the model
+                                        model.fit(X[train], Y[train],
+                                                        batch_size=ba,
+                                                        epochs=ep,
+                                                        verbose=1)
 
-                            # Evaluate
-                            scores = model.evaluate(X[test], Y[test], verbose=0)
-                            print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-                            cvscores.append(scores[1] * 100)
+                                        # Evaluate
+                                        scores = model.evaluate(X[test], Y[test], verbose=0)
+                                        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+                                        cvscores.append(scores[1] * 100)
 
-                        mean = np.mean(cvscores)
-                        std = np.std(cvscores)
-                        print("%.2f%% (+/- %.2f%%)" % (mean, std))
+                                    mean = np.mean(cvscores)
+                                    std = np.std(cvscores)
+                                    print("%.2f%% (+/- %.2f%%)" % (mean, std))
 
-                        #write result
-                        with open(path,'a',newline='') as c:
-                             writer = csv.writer(c)
-                             writer.writerow([ac,op,ep,ba,ou,mean,std])
+                                    #write result
+                                    with open(path,'a',newline='') as c:
+                                            writer = csv.writer(c)
+                                            writer.writerow([ac,op,ep,ba,ou1,ou2,ou3,ou4,
+                                                            mean,std])
 
     return model
 
 #test code for this module
 if __name__ == '__main__':
 
-    #parameter for grid search
+    #parameter list for grid search
     activation = ["sigmoid"]
     optimizer = ["adam"]
-    out_dim = [16,32]
-    nb_epoch = [10]
-    batch_size = [32]
+    nb_epoch = [300]
+    batch_size = [8,16,32,64,128]
+    out_dim1 = [8,16,32,64,128]
+    out_dim2 = [8,16,32,64,128]
+    out_dim3 = [8,16,32,64,128]
+    out_dim4 = [8,16,32,64,128]
     
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
@@ -151,6 +159,6 @@ if __name__ == '__main__':
 
     #learn
     model = gridSearch(train_images,train_labels,
-                       activation,optimizer,nb_epoch,batch_size,out_dim)
+                       activation,optimizer,nb_epoch,batch_size,out_dim1,out_dim2,out_dim3,out_dim4)
 
     
