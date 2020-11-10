@@ -1,5 +1,3 @@
-activation,optimizer,out_dim,epoch,batch_size,maxValAcc
-sigmoid,adam,16,10,32,0.74553573
-sigmoid,adam,16,20,32,0.7589286
-sigmoid,adam,32,10,32,0.7410714
-sigmoid,adam,32,20,32,0.76339287
+activation,optimizer,epochs,batch_size,out_dim,CV_ACC,CV_STD
+sigmoid,adam,10,32,16,67.4970543384552,1.13738686357373
+sigmoid,adam,10,32,32,66.98475539684296,2.22083025081567

@@ -8,6 +8,8 @@ import random
 import os
 import csv
 
+from sklearn.model_selection import StratifiedKFold
+
 import cv2
 
 #function that creates a dataset labeled with the folder name under root_path
@@ -45,11 +47,23 @@ def make_dataset(root_path):
 
     return (np_imgs,np_labels)
 
-#Model
-def gridSearch(train_data,train_label,val_data,val_label,
-              activation,optimizer,out_dim,epoch,batch_size): #parameter lists
+def getModel(ac,ou):
+    inputs = keras.layers.Input(shape=(64,64,1))
+    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(inputs)
+    x = keras.layers.MaxPooling2D((2, 2))(x)
+    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+    x = keras.layers.MaxPooling2D((2, 2))(x)
+    x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
+    x = keras.layers.Flatten()(x)
+    x = keras.layers.Dense(ou, activation='relu')(x)
+    out = keras.layers.Dense(1, activation=ac)(x)
+    model = keras.Model(inputs=inputs,outputs=out)
 
-    acc_target = 0.95
+    return model
+
+#Model
+def gridSearch(train_data,train_label,
+              activation,optimizer,epochs,batch_size,out_dim): #parameter lists
 
     if not (os.path.exists('result')):
         os.mkdir('result')
@@ -59,64 +73,52 @@ def gridSearch(train_data,train_label,val_data,val_label,
 
     with open(path,'a',newline='') as c:
         writer = csv.writer(c)
-        writer.writerow(['activation','optimizer','out_dim','epoch','batch_size','maxValAcc'])
+        writer.writerow(['activation','optimizer','epochs','batch_size','out_dim','CV_ACC','CV_STD'])
 
+    # fix random seed for reproducibility
+    seed = 7
+    np.random.seed(seed)
+
+    # define X-fold cross validation
+    kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+    cvscores = []
+
+    X=train_data
+    Y=train_label
 
     for ac in activation:
         for op in optimizer:
-            for ou in out_dim:
-                for ep in epoch:
-                    for ba in batch_size:
-                        #--Model definition part----------------------------------------------
-                        inputs = keras.layers.Input(shape=(64,64,1))
-                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(inputs)
-                        x = keras.layers.MaxPooling2D((2, 2))(x)
-                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
-                        x = keras.layers.MaxPooling2D((2, 2))(x)
-                        x = keras.layers.Conv2D(ou, (3, 3), activation='relu')(x)
-                        x = keras.layers.Flatten()(x)
-                        x = keras.layers.Dense(ou, activation='relu')(x)
-                        out = keras.layers.Dense(1, activation=ac)(x)
-                        model = keras.Model(inputs=inputs,outputs=out)
-                        #---------------------------------------------------------------------
+            for ep in epochs:
+                for ba in batch_size:
+                    for ou in out_dim:
+                        #cross validation
+                        for train, test in kfold.split(X,Y):
+                            # create model
+                            model = getModel(ac,ou)
 
-                        #compile
-                        model.compile(optimizer=op,
-                            loss='binary_crossentropy',
-                            metrics=['accuracy'])
+                            model.compile(optimizer=op,
+                                  loss='binary_crossentropy',
+                                  metrics=['accuracy'])
 
-                        #fit
-                        history=model.fit(train_data,
-                            train_label,
-                            epochs=ep,
-                            batch_size=ba,
-                            validation_data=(val_data,val_label))
+                            # Fit the model
+                            model.fit(X[train], Y[train],
+                                            batch_size=ba,
+                                            epochs=ep,
+                                            verbose=1)
 
-                        #save training & validation loss values
-                        plt.figure()
-                        plt.plot(history.history['loss'])
-                        plt.plot(history.history['val_loss'])
-                        plt.title('Model loss')
-                        plt.ylabel('Loss')
-                        plt.xlabel('Epoch')
-                        plt.legend(['Train', 'Val'], loc='upper left')
-                        plt.savefig('result/Loss_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+                            # Evaluate
+                            scores = model.evaluate(X[test], Y[test], verbose=0)
+                            print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+                            cvscores.append(scores[1] * 100)
 
-                        #save training & validation acces
-                        plt.figure()
-                        plt.plot(history.history['accuracy'])
-                        plt.plot(history.history['val_accuracy'])
-                        plt.hlines(acc_target,0,ep, "blue", linestyles='dashed')
-                        plt.title('Model accuracy')
-                        plt.ylabel('accuracy')
-                        plt.xlabel('Epoch')
-                        plt.legend(['Train', 'Val'], loc='upper left')
-                        plt.savefig('result/Acc_{0}_{1}_{2}_{3}_{4}.png'.format(ac,op,ou,ep,ba))
+                        mean = np.mean(cvscores)
+                        std = np.std(cvscores)
+                        print("%.2f%% (+/- %.2f%%)" % (mean, std))
 
                         #write result
                         with open(path,'a',newline='') as c:
                              writer = csv.writer(c)
-                             writer.writerow([ac,op,ou,ep,ba,max(history.history['val_accuracy'])])
+                             writer.writerow([ac,op,ep,ba,ou,mean,std])
 
     return model
 
@@ -127,28 +129,28 @@ if __name__ == '__main__':
     activation = ["sigmoid"]
     optimizer = ["adam"]
     out_dim = [16,32]
-    nb_epoch = [10,20]
+    nb_epoch = [10]
     batch_size = [32]
     
     #import data
-    (load_images,load_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
 
     #divide into training data and test data(90%:10%)
-    test_images = load_images[:int(len(load_images)*0.1)]
-    train_images = load_images[int(len(load_images)*0.1):]
-    test_labels = load_labels[:int(len(load_labels)*0.1)]
-    train_labels = load_labels[int(len(load_labels)*0.1):]
+    #test_images = load_images[:int(len(load_images)*0.1)]
+    #train_images = load_images[int(len(load_images)*0.1):]
+    #test_labels = load_labels[:int(len(load_labels)*0.1)]
+    #train_labels = load_labels[int(len(load_labels)*0.1):]
 
     #normalization
     train_images = train_images / 255.0
-    test_images = test_images / 255.0
+    #test_images = test_images / 255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
-    test_images = test_images.reshape(-1,64,64,1)
+    #test_images = test_images.reshape(-1,64,64,1)
 
     #learn
-    model = gridSearch(train_images,train_labels,test_images,test_labels,
-                       activation,optimizer,out_dim,nb_epoch,batch_size)
+    model = gridSearch(train_images,train_labels,
+                       activation,optimizer,nb_epoch,batch_size,out_dim)
 
     
