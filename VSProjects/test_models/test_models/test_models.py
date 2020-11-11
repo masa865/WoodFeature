@@ -82,11 +82,11 @@ def testNet(imsize=64,channel=1):
     inputs = keras.layers.Input(shape=(imsize,imsize,channel))
     x = keras.layers.Conv2D(16, (3, 3), activation='relu')(inputs)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(x)
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(8, activation='relu')(x)
+    x = keras.layers.Dense(16, activation='relu')(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
@@ -99,9 +99,10 @@ if __name__ == '__main__':
     from sklearn.model_selection import KFold
     from sklearn.model_selection import train_test_split
 
-    lr=0.0003
+    lr=0.0008
     batch_size = 128
-    epochs = 1000
+    epochs = 1500
+    optimizer = "adamax"
     
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
@@ -126,7 +127,7 @@ if __name__ == '__main__':
 
     model.summary()
 
-    model.compile(optimizer='adam',
+    model.compile(optimizer=optimizer,
               loss='binary_crossentropy',
               metrics=['accuracy'])
     tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
