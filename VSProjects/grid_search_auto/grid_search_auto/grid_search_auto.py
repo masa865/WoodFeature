@@ -136,9 +136,9 @@ if __name__ == '__main__':
     #parameter list for grid search
     activation = ["sigmoid"]
     optimizer = ["adamax"]
-    epochs = [800]
+    epochs = [1500]
     batch_size = [128]
-    learn_rate = [0.0004,0.0005,0.0006,0.0007,0.0008,0.0009,0.001]
+    learn_rate = [0.0004]
     out_dim1 = [16]
     out_dim2 = [32]
     out_dim3 = [32]
