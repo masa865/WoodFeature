@@ -33,18 +33,17 @@ def make_dataset(root_path):
     #make image dataset 
     imgs = []
     for filename in all_image_paths:
-        #img = cv2.imread(filename,cv2.IMREAD_COLOR)
-        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        #img = img / 255.0 #normalization
-        img = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
-        imgs.append(img)
+        img = cv2.imread(filename,cv2.IMREAD_COLOR)
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        img_h,img_s,img_v = cv2.split(img_hsv)
+        imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
 
 #All Convolutional Net
-def allConvNet(inputs,imsize=64,channel=1):
+def allConvNet(imsize=64,channel=1):
 
     inputs = keras.layers.Input(shape=(imsize,imsize,channel))
     x = keras.layers.Conv2D(32, (3, 3), strides=(2, 2), activation='relu')(inputs)
@@ -81,14 +80,13 @@ def baseLineNet(inputs,imsize=64,channel=1):
 def testNet(imsize=64,channel=1):
 
     inputs = keras.layers.Input(shape=(imsize,imsize,channel))
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(inputs)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(inputs)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(x)
     x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x)
     x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(64, activation='relu')(x)
-    #x = keras.layers.Dropout(0.2)(x)
+    x = keras.layers.Dense(8, activation='relu')(x)
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
@@ -100,6 +98,10 @@ if __name__ == '__main__':
 
     from sklearn.model_selection import KFold
     from sklearn.model_selection import train_test_split
+
+    lr=0.0003
+    batch_size = 128
+    epochs = 1000
     
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
@@ -127,66 +129,31 @@ if __name__ == '__main__':
     model.compile(optimizer='adam',
               loss='binary_crossentropy',
               metrics=['accuracy'])
+    tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
 
-    #cross validation
-    ep=100
-    batchsize=32
-    kf = KFold(n_splits=5, shuffle=True)
-
-    all_loss=[]
-    all_val_loss=[]
-    all_acc=[]
-    all_val_acc=[]
+    # Fit the model
+    history = model.fit(train_images, train_labels,
+              batch_size=batch_size,
+              epochs=epochs,
+              validation_split=0.1)
     
-    for train_index,val_index in kf.split(train_images,train_labels):
-        train_data=train_images[train_index]
-        train_label=train_labels[train_index]
-        val_data=train_images[val_index]
-        val_label=train_labels[val_index]
-
-        history=model.fit(train_data,
-                      train_label,
-                      epochs=ep,
-                      batch_size=batchsize,
-                      validation_data=(val_data,val_label))
-
-        loss=history.history['loss']
-        val_loss=history.history['val_loss']
-        acc=history.history['accuracy']
-        val_acc=history.history['val_accuracy']
-
-        all_loss.append(loss)
-        all_val_loss.append(val_loss)
-        all_acc.append(acc)
-        all_val_acc.append(val_acc)
-
-        ave_all_loss=[
-            np.mean([x[i] for x in all_loss]) for i in range(ep)]
-        ave_all_val_loss=[
-            np.mean([x[i] for x in all_val_loss]) for i in range(ep)]
-        ave_all_acc=[
-            np.mean([x[i] for x in all_acc]) for i in range(ep)]
-        ave_all_val_acc=[
-            np.mean([x[i] for x in all_val_acc]) for i in range(ep)]
 
     #plot training & validation loss values
-    plt.plot(ave_all_loss,color='blue',  linestyle='solid')
-    plt.plot(ave_all_val_loss,color='blue',  linestyle='dashed')
-
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
     plt.title('Model loss')
-    plt.ylabel('Loss(binary cross entropy)')
+    plt.ylabel('Loss(binary cross enrropy)')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.legend(['Train', 'Val'], loc='upper left')
     plt.show()
 
     #plot training & validation acces
-    plt.plot(ave_all_acc,color='blue',linestyle='solid')
-    plt.plot(ave_all_val_acc,color='blue',linestyle='dashed')
-
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
     plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
+    plt.ylabel('accuracy')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.legend(['Train', 'Val'], loc='upper left')
     plt.show()
 
     #save model

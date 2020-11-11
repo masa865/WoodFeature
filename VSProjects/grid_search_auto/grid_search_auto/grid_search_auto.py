@@ -7,6 +7,7 @@ import pathlib
 import random
 import os
 import csv
+import sys
 
 from sklearn.model_selection import StratifiedKFold
 
@@ -63,7 +64,7 @@ def getModel(ac,ou1,ou2,ou3,ou4):
 
 #Model
 def gridSearch(train_data,train_label,
-              activation,optimizer,epochs,batch_size,out_dim1,out_dim2,out_dim3,out_dim4): #parameter lists
+              activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4): #parameter lists
 
     if not (os.path.exists('result')):
         os.mkdir('result')
@@ -73,7 +74,7 @@ def gridSearch(train_data,train_label,
 
     with open(path,'a',newline='') as c:
         writer = csv.writer(c)
-        writer.writerow(['activation','optimizer','epochs','batch_size','out_dim1','out_dim2','out_dim3','out_dim4',
+        writer.writerow(['activation','optimizer','epochs','batch_size','learn_rate','out_dim1','out_dim2','out_dim3','out_dim4',
                          'CV_ACC','CV_STD'])
 
     # fix random seed for reproducibility
@@ -90,40 +91,42 @@ def gridSearch(train_data,train_label,
         for op in optimizer:
             for ep in epochs:
                 for ba in batch_size:
-                    for ou1 in out_dim1:
-                        for ou2 in out_dim2:
-                            for ou3 in out_dim3:
-                                for ou4 in out_dim4:
-                                    #cross validation
-                                    cvscores = []
-                                    for train, test in kfold.split(X,Y):
-                                        # create model
-                                        model = getModel(ac,ou1,ou2,ou3,ou4)
+                    for lr in learn_rate:
+                        for ou1 in out_dim1:
+                            for ou2 in out_dim2:
+                                for ou3 in out_dim3:
+                                    for ou4 in out_dim4:
+                                        #cross validation
+                                        cvscores = []
+                                        for train, test in kfold.split(X,Y):
+                                            # create model
+                                            model = getModel(ac,ou1,ou2,ou3,ou4)
 
-                                        model.compile(optimizer=op,
-                                                loss='binary_crossentropy',
-                                                metrics=['accuracy'])
+                                            model.compile(optimizer=op,
+                                                    loss='binary_crossentropy',
+                                                    metrics=['accuracy'])
+                                            tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
 
-                                        # Fit the model
-                                        model.fit(X[train], Y[train],
-                                                        batch_size=ba,
-                                                        epochs=ep,
-                                                        verbose=1)
+                                            # Fit the model
+                                            model.fit(X[train], Y[train],
+                                                            batch_size=ba,
+                                                            epochs=ep,
+                                                            verbose=1)
 
-                                        # Evaluate
-                                        scores = model.evaluate(X[test], Y[test], verbose=0)
-                                        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-                                        cvscores.append(scores[1] * 100)
+                                            # Evaluate
+                                            scores = model.evaluate(X[test], Y[test], verbose=0)
+                                            print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+                                            cvscores.append(scores[1] * 100)
 
-                                    mean = np.mean(cvscores)
-                                    std = np.std(cvscores)
-                                    print("%.2f%% (+/- %.2f%%)" % (mean, std))
+                                        mean = np.mean(cvscores)
+                                        std = np.std(cvscores)
+                                        print("%.2f%% (+/- %.2f%%)" % (mean, std))
 
-                                    #write result
-                                    with open(path,'a',newline='') as c:
-                                            writer = csv.writer(c)
-                                            writer.writerow([ac,op,ep,ba,ou1,ou2,ou3,ou4,
-                                                            mean,std])
+                                        #write result
+                                        with open(path,'a',newline='') as c:
+                                                writer = csv.writer(c)
+                                                writer.writerow([ac,op,ep,ba,lr,ou1,ou2,ou3,ou4,
+                                                                mean,std])
 
     return model
 
@@ -132,14 +135,15 @@ if __name__ == '__main__':
 
     #parameter list for grid search
     activation = ["sigmoid"]
-    optimizer = ["adam"]
-    nb_epoch = [300]
-    batch_size = [8,16,32,64,128]
-    out_dim1 = [8,16,32,64,128]
-    out_dim2 = [8,16,32,64,128]
-    out_dim3 = [8,16,32,64,128]
-    out_dim4 = [8,16,32,64,128]
-    
+    optimizer = ["adamax"]
+    epochs = [800]
+    batch_size = [128]
+    learn_rate = [0.0004,0.0005,0.0006,0.0007,0.0008,0.0009,0.001]
+    out_dim1 = [16]
+    out_dim2 = [32]
+    out_dim3 = [32]
+    out_dim4 = [16]
+
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
 
@@ -159,6 +163,6 @@ if __name__ == '__main__':
 
     #learn
     model = gridSearch(train_images,train_labels,
-                       activation,optimizer,nb_epoch,batch_size,out_dim1,out_dim2,out_dim3,out_dim4)
+                       activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4)
 
     
