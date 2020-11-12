@@ -99,7 +99,7 @@ if __name__ == '__main__':
     from sklearn.model_selection import KFold
     from sklearn.model_selection import train_test_split
 
-    lr=0.0008
+    lr=0.0004
     batch_size = 128
     epochs = 1500
     optimizer = "adamax"
