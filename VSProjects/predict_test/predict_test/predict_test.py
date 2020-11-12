@@ -8,7 +8,7 @@ import random
 import cv2
 
 #function that creates a dataset labeled with the folder name under root_path
-def make_dataset(root_path):
+def make_dataset(root_path,data_augmentation=False):
     #create Path object for root folder
     data_root = pathlib.Path(root_path)
 
@@ -28,6 +28,11 @@ def make_dataset(root_path):
     for path in all_image_paths:
         label = label_to_index[pathlib.Path(path).parent.name]
         all_image_labels.append(label)
+
+        if(data_augmentation):
+            for augment in range(7):
+                all_image_labels.append(label)
+
     np_labels = np.array(all_image_labels) #convert to numpy array
 
     #make image dataset 
@@ -38,7 +43,19 @@ def make_dataset(root_path):
         img_h,img_s,img_v = cv2.split(img_hsv)
         imgs.append(img_v)
 
-        np_imgs = np.array(imgs) #convert to numpy array
+        if(data_augmentation):
+            #augmentation(rotate)
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_CLOCKWISE))
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_180))
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_COUNTERCLOCKWISE))
+            #augmentation(reverse)
+            rev_img = cv2.flip(img_v,1) #左右反転
+            imgs.append(rev_img)
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
+
+    np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
 
@@ -88,8 +105,8 @@ if __name__ == '__main__':
     optimizer = "adamax"
     
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
-    (test_images,test_labels) = make_dataset(r'C:\Users\sirim\Pictures\new\output\test_image\test_data')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing',data_augmentation=True)
+    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
 
     #normalization
     train_images = train_images / 255.0
