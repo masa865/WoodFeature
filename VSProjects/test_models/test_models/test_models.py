@@ -37,7 +37,7 @@ def make_dataset(root_path):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
         
-        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 20 + 148,dtype=np.uint8) #normalization
+        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 150,dtype=np.uint8) #normalization
         img_v = np.clip(img_v,0,255)
 
         #img_v = cv2.equalizeHist(img_v)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     from sklearn.metrics import roc_curve
     from sklearn.metrics import auc
 
-    lr=0.0007
+    lr=0.0004
     batch_size = 128
     epochs = 1500
     optimizer = "adamax"
