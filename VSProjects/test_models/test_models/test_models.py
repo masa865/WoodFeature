@@ -36,7 +36,9 @@ def make_dataset(root_path):
         img = cv2.imread(filename,cv2.IMREAD_COLOR)
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
-        #img_v = cv2.equalizeHist(img_v)
+        
+        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 128,dtype=np.uint8) #normalization
+
         imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
@@ -119,8 +121,8 @@ if __name__ == '__main__':
     #train_labels = load_labels[int(len(load_labels)*0.1):]
 
     #normalization
-    train_images = train_images / 255.0
-    test_images = test_images / 255.0
+    train_images = train_images
+    test_images = test_images
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
