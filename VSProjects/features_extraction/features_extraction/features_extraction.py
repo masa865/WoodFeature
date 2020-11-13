@@ -139,12 +139,14 @@ def extractFeature(img,center_x,center_y,radius,model):
 #test code for this module
 if __name__ == '__main__':
 
-    load_img = cv2.imread(r"",cv2.IMREAD_GRAYSCALE)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\new\output\test_image\test_data_50012\low\50012_005_011.tif",cv2.IMREAD_GRAYSCALE)
 
     cv2.imshow('load_img',load_img)
     cv2.waitKey(0)
 
-    hist_img = cv2.equalizeHist(load_img)
+    #hist_img = cv2.equalizeHist(load_img)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(3, 3))
+    hist_img = clahe.apply(load_img)
     cv2.imshow('load_img',hist_img)
     cv2.waitKey(0)
 
