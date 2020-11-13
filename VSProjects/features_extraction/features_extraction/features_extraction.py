@@ -139,13 +139,14 @@ def extractFeature(img,center_x,center_y,radius,model):
 #test code for this module
 if __name__ == '__main__':
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\new\output\test_image\test_data_50012\low\50012_005_011.tif",cv2.IMREAD_GRAYSCALE)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\new\deru.jpg",cv2.IMREAD_GRAYSCALE)
 
     cv2.imshow('load_img',load_img)
     cv2.waitKey(0)
 
     #hist_img = cv2.equalizeHist(load_img)
-    hist_img = np.array((load_img - np.mean(load_img)) / np.std(load_img) * 32 + 128,dtype=np.uint8) #normalization
+    hist_img = np.array((load_img - np.mean(load_img)) / np.std(load_img) * 16 + 128,dtype=np.uint8) #normalization
+    hist_img = np.clip(hist_img, 0, 255)
     cv2.imshow('hist_img',hist_img)
     cv2.waitKey(0)
 
