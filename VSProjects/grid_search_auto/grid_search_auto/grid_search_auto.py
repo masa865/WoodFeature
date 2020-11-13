@@ -42,6 +42,10 @@ def make_dataset(root_path):
         img = cv2.imread(filename,cv2.IMREAD_COLOR)
         img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
+
+        clahe = cv2.createCLAHE(clipLimit=2,tileGridSize=(3,3))
+        img_v = clahe.apply(img_v)
+
         imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
@@ -63,7 +67,7 @@ def getModel(ac,ou1,ou2,ou3,ou4):
     return model
 
 #Model
-def gridSearch(train_data,train_label,
+def gridSearch(train_data,train_label,test_data,test_label,
               activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4): #parameter lists
 
     if not (os.path.exists('result')):
@@ -75,7 +79,7 @@ def gridSearch(train_data,train_label,
     with open(path,'a',newline='') as c:
         writer = csv.writer(c)
         writer.writerow(['activation','optimizer','epochs','batch_size','learn_rate','out_dim1','out_dim2','out_dim3','out_dim4',
-                         'CV_ACC','CV_STD'])
+                         'CV_ACC','CV_STD','Test_ACC','Test_STD'])
 
     # fix random seed for reproducibility
     seed = 7
@@ -98,6 +102,7 @@ def gridSearch(train_data,train_label,
                                     for ou4 in out_dim4:
                                         #cross validation
                                         cvscores = []
+                                        test_acces = []
                                         for train, test in kfold.split(X,Y):
                                             # create model
                                             model = getModel(ac,ou1,ou2,ou3,ou4)
@@ -118,15 +123,21 @@ def gridSearch(train_data,train_label,
                                             print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
                                             cvscores.append(scores[1] * 100)
 
+                                            test_loss, test_acc = model.evaluate(test_data, test_label)
+                                            test_acces.append(test_acc*100)
+
                                         mean = np.mean(cvscores)
                                         std = np.std(cvscores)
                                         print("%.2f%% (+/- %.2f%%)" % (mean, std))
+
+                                        test_mean = np.mean(test_acces)
+                                        test_std = np.std(test_acces)
 
                                         #write result
                                         with open(path,'a',newline='') as c:
                                                 writer = csv.writer(c)
                                                 writer.writerow([ac,op,ep,ba,lr,ou1,ou2,ou3,ou4,
-                                                                mean,std])
+                                                                mean,std,test_mean,test_std])
 
     return model
 
@@ -146,6 +157,7 @@ if __name__ == '__main__':
 
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
 
     #divide into training data and test data(90%:10%)
     #test_images = load_images[:int(len(load_images)*0.1)]
@@ -155,14 +167,14 @@ if __name__ == '__main__':
 
     #normalization
     train_images = train_images / 255.0
-    #test_images = test_images / 255.0
+    test_images = test_images / 255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
-    #test_images = test_images.reshape(-1,64,64,1)
+    test_images = test_images.reshape(-1,64,64,1)
 
     #learn
-    model = gridSearch(train_images,train_labels,
+    model = gridSearch(train_images,train_labels,test_images,test_labels,
                        activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4)
 
     

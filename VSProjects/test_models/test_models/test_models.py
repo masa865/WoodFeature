@@ -168,7 +168,7 @@ if __name__ == '__main__':
               epochs=epochs,
               validation_split=0.1)
 
-     #Evaluate
+    #Evaluate
     test_loss, test_acc = model.evaluate(test_images, test_labels)
     
     print("test_loss:{}".format(test_loss))
