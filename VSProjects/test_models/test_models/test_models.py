@@ -8,7 +8,7 @@ import random
 import cv2
 
 #function that creates a dataset labeled with the folder name under root_path
-def make_dataset(root_path):
+def make_dataset(root_path,data_augmentation=False):
     #create Path object for root folder
     data_root = pathlib.Path(root_path)
 
@@ -28,6 +28,11 @@ def make_dataset(root_path):
     for path in all_image_paths:
         label = label_to_index[pathlib.Path(path).parent.name]
         all_image_labels.append(label)
+
+        if(data_augmentation):
+            for augment in range(7):
+                all_image_labels.append(label)
+
     np_labels = np.array(all_image_labels) #convert to numpy array
 
     #make image dataset 
@@ -37,10 +42,25 @@ def make_dataset(root_path):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
         
-        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 150,dtype=np.uint8) #normalization
-        img_v = np.clip(img_v,0,255)
+        #img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 150,dtype=np.uint8) #normalization
+        #img_v = np.clip(img_v,0,255)
+
+        clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
+        img_v = clahe.apply(img_v)
 
         #img_v = cv2.equalizeHist(img_v)
+
+        if(data_augmentation):
+            #augmentation(rotate)
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_CLOCKWISE))
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_180))
+            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_COUNTERCLOCKWISE))
+            #augmentation(reverse)
+            rev_img = cv2.flip(img_v,1) #左右反転
+            imgs.append(rev_img)
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
+            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
 
         imgs.append(img_v)
 
@@ -124,8 +144,8 @@ if __name__ == '__main__':
     #train_labels = load_labels[int(len(load_labels)*0.1):]
 
     #normalization
-    train_images = train_images
-    test_images = test_images
+    train_images = train_images /255.0
+    test_images = test_images /255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
