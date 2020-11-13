@@ -145,9 +145,8 @@ if __name__ == '__main__':
     cv2.waitKey(0)
 
     #hist_img = cv2.equalizeHist(load_img)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(3, 3))
-    hist_img = clahe.apply(load_img)
-    cv2.imshow('load_img',hist_img)
+    hist_img = np.array((load_img - np.mean(load_img)) / np.std(load_img) * 32 + 128,dtype=np.uint8) #normalization
+    cv2.imshow('hist_img',hist_img)
     cv2.waitKey(0)
 
     #img_blur = cv2.medianBlur(load_img,3)
