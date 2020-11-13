@@ -37,11 +37,14 @@ def make_dataset(root_path):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
         
-        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 128,dtype=np.uint8) #normalization
+        img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 20 + 148,dtype=np.uint8) #normalization
+        img_v = np.clip(img_v,0,255)
+
+        #img_v = cv2.equalizeHist(img_v)
 
         imgs.append(img_v)
 
-        np_imgs = np.array(imgs) #convert to numpy array
+    np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
 
@@ -105,7 +108,7 @@ if __name__ == '__main__':
     from sklearn.metrics import roc_curve
     from sklearn.metrics import auc
 
-    lr=0.0004
+    lr=0.0007
     batch_size = 128
     epochs = 1500
     optimizer = "adamax"
@@ -144,6 +147,12 @@ if __name__ == '__main__':
               batch_size=batch_size,
               epochs=epochs,
               validation_split=0.1)
+
+     #Evaluate
+    test_loss, test_acc = model.evaluate(test_images, test_labels)
+    
+    print("test_loss:{}".format(test_loss))
+    print("test_acc :{}".format(test_acc))
     
 
     #plot training & validation loss values
