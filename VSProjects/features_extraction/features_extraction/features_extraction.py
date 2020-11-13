@@ -139,9 +139,13 @@ def extractFeature(img,center_x,center_y,radius,model):
 #test code for this module
 if __name__ == '__main__':
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\new\deru.jpg",cv2.IMREAD_GRAYSCALE)
+    load_img = cv2.imread(r"",cv2.IMREAD_GRAYSCALE)
 
     cv2.imshow('load_img',load_img)
+    cv2.waitKey(0)
+
+    hist_img = cv2.equalizeHist(load_img)
+    cv2.imshow('load_img',hist_img)
     cv2.waitKey(0)
 
     #img_blur = cv2.medianBlur(load_img,3)
