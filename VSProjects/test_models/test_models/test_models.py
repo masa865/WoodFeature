@@ -36,6 +36,7 @@ def make_dataset(root_path):
         img = cv2.imread(filename,cv2.IMREAD_COLOR)
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
+        #img_v = cv2.equalizeHist(img_v)
         imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
@@ -97,7 +98,10 @@ def testNet(imsize=64,channel=1):
 if __name__ == '__main__':
 
     from sklearn.model_selection import KFold
+    from sklearn.datasets import make_classification
     from sklearn.model_selection import train_test_split
+    from sklearn.metrics import roc_curve
+    from sklearn.metrics import auc
 
     lr=0.0004
     batch_size = 128
@@ -106,6 +110,7 @@ if __name__ == '__main__':
     
     #import data
     (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
+    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
 
     #divide into training data and test data(90%:10%)
     #test_images = load_images[:int(len(load_images)*0.1)]
@@ -115,11 +120,11 @@ if __name__ == '__main__':
 
     #normalization
     train_images = train_images / 255.0
-    #test_images = test_images / 255.0
+    test_images = test_images / 255.0
 
     #reshape
     train_images = train_images.reshape(-1,64,64,1)
-    #test_images = test_images.reshape(-1,64,64,1)
+    test_images = test_images.reshape(-1,64,64,1)
 
     #setting model
     #base_model = baseLineNet(train_images)
@@ -143,9 +148,9 @@ if __name__ == '__main__':
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('Model loss')
-    plt.ylabel('Loss(binary cross enrropy)')
+    plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.legend(['Train', 'Validation'], loc='upper left')
     plt.show()
 
     #plot training & validation acces
@@ -154,8 +159,23 @@ if __name__ == '__main__':
     plt.title('Model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('Epoch')
-    plt.legend(['Train', 'Val'], loc='upper left')
+    plt.legend(['Train', 'Validation'], loc='upper left')
     plt.show()
+
+    #plot roc curve
+    y_pred_keras = model.predict(test_images).ravel()
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_labels, y_pred_keras)
+    auc_keras = auc(fpr_keras, tpr_keras)
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.plot(fpr_keras, tpr_keras, label='Test data (area = {:.3f})'.format(auc_keras))
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve')
+    plt.legend(loc='best')
+    plt.show()
+
+
 
     #save model
     #model.save('base_model.h5')
