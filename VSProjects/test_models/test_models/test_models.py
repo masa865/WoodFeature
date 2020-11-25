@@ -44,9 +44,13 @@ def make_dataset(root_path,data_augmentation=False):
         
         #img_v = np.array((img_v - np.mean(img_v)) / np.std(img_v) * 32 + 150,dtype=np.uint8) #normalization
         #img_v = np.clip(img_v,0,255)
+        #cv2.imshow('image',img_v)
+        #cv2.waitKey(0)
 
         clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
         img_v = clahe.apply(img_v)
+        #cv2.imshow('clahe',img_v)
+        #cv2.waitKey(0)
 
         #img_v = cv2.equalizeHist(img_v)
 
@@ -116,6 +120,8 @@ def testNet(imsize=64,channel=1):
     out = keras.layers.Dense(1, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs,outputs=out)
+
+    model.summary()
 
     return model
 
@@ -188,7 +194,7 @@ if __name__ == '__main__':
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
     plt.title('Model accuracy')
-    plt.ylabel('accuracy')
+    plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.show()
