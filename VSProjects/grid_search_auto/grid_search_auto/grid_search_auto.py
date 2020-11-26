@@ -10,6 +10,11 @@ import csv
 import sys
 
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
 
 import cv2
 
@@ -43,7 +48,7 @@ def make_dataset(root_path):
         img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
 
-        clahe = cv2.createCLAHE(clipLimit=2,tileGridSize=(3,3))
+        clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
         img_v = clahe.apply(img_v)
 
         imgs.append(img_v)
@@ -86,7 +91,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
     np.random.seed(seed)
 
     # define X-fold cross validation
-    kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+    kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 
     X=train_data
     Y=train_label
@@ -113,9 +118,10 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                             tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
 
                                             # Fit the model
-                                            model.fit(X[train], Y[train],
+                                            history = model.fit(X[train], Y[train],
                                                             batch_size=ba,
                                                             epochs=ep,
+                                                            validation_data=(X[test],Y[test]),
                                                             verbose=1)
 
                                             # Evaluate
@@ -132,6 +138,37 @@ def gridSearch(train_data,train_label,test_data,test_label,
 
                                         test_mean = np.mean(test_acces)
                                         test_std = np.std(test_acces)
+
+                                        #plot training & validation loss values
+                                        plt.plot(history.history['loss'])
+                                        plt.plot(history.history['val_loss'])
+                                        plt.title('Model loss')
+                                        plt.ylabel('Loss')
+                                        plt.xlabel('Epoch')
+                                        plt.legend(['Train', 'Validation'], loc='upper left')
+                                        plt.show()
+
+                                        #plot training & validation acces
+                                        plt.plot(history.history['accuracy'])
+                                        plt.plot(history.history['val_accuracy'])
+                                        plt.title('Model accuracy')
+                                        plt.ylabel('Accuracy')
+                                        plt.xlabel('Epoch')
+                                        plt.legend(['Train', 'Validation'], loc='upper left')
+                                        plt.show()
+
+                                        #plot roc curve
+                                        y_pred_keras = model.predict(test_data).ravel()
+                                        fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_label, y_pred_keras)
+                                        auc_keras = auc(fpr_keras, tpr_keras)
+                                        plt.figure(1)
+                                        plt.plot([0, 1], [0, 1], 'k--')
+                                        plt.plot(fpr_keras, tpr_keras, label='Test data (area = {:.3f})'.format(auc_keras))
+                                        plt.xlabel('False positive rate')
+                                        plt.ylabel('True positive rate')
+                                        plt.title('ROC curve')
+                                        plt.legend(loc='best')
+                                        plt.show()
 
                                         #write result
                                         with open(path,'a',newline='') as c:
@@ -176,5 +213,7 @@ if __name__ == '__main__':
     #learn
     model = gridSearch(train_images,train_labels,test_images,test_labels,
                        activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4)
+
+    model.save('model_64_10fold.h5')
 
     
