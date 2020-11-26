@@ -8,6 +8,7 @@ import random
 import os
 import csv
 import sys
+import time
 
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
@@ -91,7 +92,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
     np.random.seed(seed)
 
     # define X-fold cross validation
-    kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
+    kfold = StratifiedKFold(n_splits=2, shuffle=True, random_state=seed)
 
     X=train_data
     Y=train_label
@@ -210,9 +211,16 @@ if __name__ == '__main__':
     train_images = train_images.reshape(-1,64,64,1)
     test_images = test_images.reshape(-1,64,64,1)
 
+
+    start = time.time()
     #learn
     model = gridSearch(train_images,train_labels,test_images,test_labels,
                        activation,optimizer,epochs,batch_size,learn_rate,out_dim1,out_dim2,out_dim3,out_dim4)
+    elapsed_time = time.time() - start
+    if elapsed_time >= 60:
+        print ("elapsed_time:{0}".format(elapsed_time/60) + "[min]")
+    if elapsed_time < 60:
+        print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
     model.save('model_64_10fold.h5')
 
