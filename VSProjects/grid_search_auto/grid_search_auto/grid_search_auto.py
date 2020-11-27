@@ -40,6 +40,11 @@ def make_dataset(root_path):
     for path in all_image_paths:
         label = label_to_index[pathlib.Path(path).parent.name]
         all_image_labels.append(label)
+
+        #for 32 size
+        for i in range(3):
+            all_image_labels.append(label)
+
     np_labels = np.array(all_image_labels) #convert to numpy array
 
     #make image dataset 
@@ -52,14 +57,34 @@ def make_dataset(root_path):
         clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
         img_v = clahe.apply(img_v)
 
-        imgs.append(img_v)
+        #for 32
+        a = img_v[0:32,0:32]
+        #cv2.imshow('a',a)
+        #cv2.waitKey(0)
+        b = img_v[32:64,0:32]
+        #cv2.imshow('b',b)
+        #cv2.waitKey(0)
+        c = img_v[0:32,32:64]
+        #cv2.imshow('c',c)
+        #cv2.waitKey(0)
+        d = img_v[32:64,32:64]
+        #cv2.imshow('d',d)
+        #cv2.waitKey(0)
+        imgs.append(a)
+        imgs.append(b)
+        imgs.append(c)
+        imgs.append(d)
+
+
+        #imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
 
 def getModel(ac,ou1,ou2,ou3,ou4):
-    inputs = keras.layers.Input(shape=(64,64,1))
+    #inputs = keras.layers.Input(shape=(64,64,1))
+    inputs = keras.layers.Input(shape=(32,32,1))
     x = keras.layers.Conv2D(ou1, (3, 3), activation='relu')(inputs)
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Conv2D(ou2, (3, 3), activation='relu')(x)
@@ -92,7 +117,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
     np.random.seed(seed)
 
     # define X-fold cross validation
-    kfold = StratifiedKFold(n_splits=2, shuffle=True, random_state=seed)
+    kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 
     X=train_data
     Y=train_label
@@ -208,8 +233,11 @@ if __name__ == '__main__':
     test_images = test_images / 255.0
 
     #reshape
-    train_images = train_images.reshape(-1,64,64,1)
-    test_images = test_images.reshape(-1,64,64,1)
+    #train_images = train_images.reshape(-1,64,64,1)
+    #test_images = test_images.reshape(-1,64,64,1)
+
+    train_images = train_images.reshape(-1,32,32,1)
+    test_images = test_images.reshape(-1,32,32,1)
 
 
     start = time.time()
