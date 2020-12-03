@@ -130,29 +130,36 @@ def tvDenoise(img,lamda=0.3,timestep=0.01):
 #test code for this module
 if __name__ == '__main__':
 
-    img_load = cv2.imread(r"C:\Users\sirim\Pictures\new\lenna.bmp")
+    img_load = cv2.imread(r"C:\Users\sirim\Pictures\outside_image_tif_trim\DSC_0643.tif")
 
     #plot original image
-    I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
-    cv2.imshow("original",I_t)
-    cv2.waitKey(0)
+    #I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
+    #cv2.imshow("original",I_t)
+    #cv2.waitKey(0)
 
     #plot noisy image
-    f = add_noise(I_t)
-    cv2.imshow("noisy",f)
-    cv2.waitKey(0)
+    #f = add_noise(I_t)
+    #cv2.imshow("noisy",f)
+    #cv2.waitKey(0)
 
     #plot reconstructed image
-    r = tvDenoiseSB(f)
-    cv2.imshow("reconstructed",r)
-    cv2.waitKey(0)
+    #r = tvDenoiseSB(f)
+    #cv2.imshow("reconstructed",r)
+    #cv2.waitKey(0)
 
-    im_h = cv2.hconcat([cv2.hconcat([I_t, f]),r])
-    cv2.imshow("concat",im_h)
-    cv2.waitKey(0)
-    
+    #im_h = cv2.hconcat([cv2.hconcat([I_t, f]),r])
+    #cv2.imshow("concat",im_h)
+    #cv2.waitKey(0)
+
+    img_hsv = cv2.cvtColor(img_load, cv2.COLOR_BGR2HSV)
+    img_h,img_s,img_v = cv2.split(img_hsv)
+    #cv2.imshow("img_v",img_v)
+    #cv2.waitKey(0)
+
+    img_r = tvDenoiseSB(img_v,CYCLE=20)
+
     #save image
-    cv2.imwrite(r'C:\Users\sirim\Pictures\new\output\lenna_conc.bmp',im_h)
+    cv2.imwrite(r'C:\Users\sirim\Pictures\outside_image_tif_trim\denoising\DSC_0643.tif',img_r)
 
 
 
