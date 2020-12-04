@@ -42,8 +42,8 @@ def make_dataset(root_path):
         all_image_labels.append(label)
 
         #for 32 size
-        for i in range(3):
-            all_image_labels.append(label)
+        #for i in range(3):
+        #    all_image_labels.append(label)
 
     np_labels = np.array(all_image_labels) #convert to numpy array
 
@@ -54,29 +54,29 @@ def make_dataset(root_path):
         img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
 
-        clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
-        img_v = clahe.apply(img_v)
+        #clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
+        #img_v = clahe.apply(img_v)
 
         #for 32
-        a = img_v[0:32,0:32]
+        #a = img_v[0:32,0:32]
         #cv2.imshow('a',a)
         #cv2.waitKey(0)
-        b = img_v[32:64,0:32]
+        #b = img_v[32:64,0:32]
         #cv2.imshow('b',b)
         #cv2.waitKey(0)
-        c = img_v[0:32,32:64]
+        #c = img_v[0:32,32:64]
         #cv2.imshow('c',c)
         #cv2.waitKey(0)
-        d = img_v[32:64,32:64]
+        #d = img_v[32:64,32:64]
         #cv2.imshow('d',d)
         #cv2.waitKey(0)
-        imgs.append(a)
-        imgs.append(b)
-        imgs.append(c)
-        imgs.append(d)
+        #imgs.append(a)
+        #imgs.append(b)
+        #imgs.append(c)
+        #imgs.append(d)
 
 
-        #imgs.append(img_v)
+        imgs.append(img_v)
 
         np_imgs = np.array(imgs) #convert to numpy array
 
@@ -84,7 +84,7 @@ def make_dataset(root_path):
 
 def getModel(ac,ou1,ou2,ou3,ou4):
     #inputs = keras.layers.Input(shape=(64,64,1))
-    inputs = keras.layers.Input(shape=(32,32,1))
+    inputs = keras.layers.Input(shape=(128,128,1))
     x = keras.layers.Conv2D(ou1, (3, 3), activation='relu')(inputs)
     x = keras.layers.MaxPooling2D((2, 2))(x)
     x = keras.layers.Conv2D(ou2, (3, 3), activation='relu')(x)
@@ -219,8 +219,8 @@ if __name__ == '__main__':
     out_dim4 = [16]
 
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing')
-    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\dataset_128px\training_data')
+    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\dataset_128px\test_data')
 
     #divide into training data and test data(90%:10%)
     #test_images = load_images[:int(len(load_images)*0.1)]
@@ -236,8 +236,8 @@ if __name__ == '__main__':
     #train_images = train_images.reshape(-1,64,64,1)
     #test_images = test_images.reshape(-1,64,64,1)
 
-    train_images = train_images.reshape(-1,32,32,1)
-    test_images = test_images.reshape(-1,32,32,1)
+    train_images = train_images.reshape(-1,128,128,1)
+    test_images = test_images.reshape(-1,128,128,1)
 
 
     start = time.time()
@@ -251,5 +251,3 @@ if __name__ == '__main__':
         print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
     model.save('model_64_10fold.h5')
-
-    
