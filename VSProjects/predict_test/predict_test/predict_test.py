@@ -41,11 +41,12 @@ def make_dataset(root_path,data_augmentation=False):
         img = cv2.imread(filename,cv2.IMREAD_COLOR)
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
-        imgs.append(img_v)
 
         #histogram equalization
-        clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
-        img_v = clahe.apply(img_v)
+        #clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
+        #img_v = clahe.apply(img_v)
+
+        imgs.append(img_v)
 
         #if(data_augmentation):
         #    #augmentation(rotate)
@@ -72,32 +73,34 @@ if __name__ == '__main__':
     from sklearn.model_selection import train_test_split
     
     #import data
-    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
+    (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\dataset_128px\test_data')
     test_imgs = np.copy(test_images)
 
     #normalization
     test_images = test_images / 255.0
 
     #reshape
-    test_images = test_images.reshape(-1,64,64,1)
+    test_images = test_images.reshape(-1,128,128,1)
+    #test_images = test_images.reshape(-1,64,64,1)
 
     #setting model
-    #model = load_model('./フォルダ名/' + model_file_name+'.h5')
+    model = keras.models.load_model(r'C:\Users\VIgpu01\workspace(murakami)\grid_search_result\result20201204.h5')
 
     model.summary()
 
     #predict
-    predicts = model.predict_classes(test_images)
+    predict_prob=model.predict(test_images)
+    predict_classes=np.round(predict_prob).astype(int)
 
     #save error image
     i=0
-    for img,label,predict in test_imgs,test_labels,predicts:
+    for label,predict in zip(test_labels,predict_classes):
         if predict != label:
             if label == 0:
-                cv2.imwrite(r"C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\denoising\splited" + r"\error_%03.f"%(i) + ".tif",img)
+                cv2.imwrite(r"C:\Users\VIgpu01\workspace(murakami)\WoodFeature\VSProjects\predict_test\predict_test\mistaking_high_for_low" + r"\error_%03.f"%(i) + ".tif",test_imgs[i])
             if label == 1:
-                cv2.imwrite(r"C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\denoising\splited" + r"\error_%03.f"%(i) + ".tif",img)
-            i+=1
+                cv2.imwrite(r"C:\Users\VIgpu01\workspace(murakami)\WoodFeature\VSProjects\predict_test\predict_test\mistaking_low_for_high" + r"\error_%03.f"%(i) + ".tif",test_imgs[i])
+        i+=1
 
 
 
