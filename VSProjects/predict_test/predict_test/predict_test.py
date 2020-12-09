@@ -29,9 +29,9 @@ def make_dataset(root_path,data_augmentation=False):
         label = label_to_index[pathlib.Path(path).parent.name]
         all_image_labels.append(label)
 
-        if(data_augmentation):
-            for augment in range(7):
-                all_image_labels.append(label)
+        #if(data_augmentation):
+        #    for augment in range(7):
+        #        all_image_labels.append(label)
 
     np_labels = np.array(all_image_labels) #convert to numpy array
 
@@ -43,99 +43,66 @@ def make_dataset(root_path,data_augmentation=False):
         img_h,img_s,img_v = cv2.split(img_hsv)
         imgs.append(img_v)
 
-        if(data_augmentation):
-            #augmentation(rotate)
-            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_CLOCKWISE))
-            imgs.append(cv2.rotate(img_v,cv2.ROTATE_180))
-            imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_COUNTERCLOCKWISE))
+        #histogram equalization
+        clahe = cv2.createCLAHE(clipLimit=3,tileGridSize=(3,3))
+        img_v = clahe.apply(img_v)
+
+        #if(data_augmentation):
+        #    #augmentation(rotate)
+        #    imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_CLOCKWISE))
+        #    imgs.append(cv2.rotate(img_v,cv2.ROTATE_180))
+        #    imgs.append(cv2.rotate(img_v,cv2.ROTATE_90_COUNTERCLOCKWISE))
             #augmentation(reverse)
-            rev_img = cv2.flip(img_v,1) #左右反転
-            imgs.append(rev_img)
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
-            imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
+        #    rev_img = cv2.flip(img_v,1) #左右反転
+        #    imgs.append(rev_img)
+        #    imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_CLOCKWISE))
+        #    imgs.append(cv2.rotate(rev_img,cv2.ROTATE_180))
+        #    imgs.append(cv2.rotate(rev_img,cv2.ROTATE_90_COUNTERCLOCKWISE))
 
     np_imgs = np.array(imgs) #convert to numpy array
 
     return (np_imgs,np_labels)
 
-#baseline net
-def baseLineNet(imsize=64,channel=1):
 
-    inputs = keras.layers.Input(shape=(imsize,imsize,channel))
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(inputs)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x)
-    x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(64, activation='relu')(x)
-    out = keras.layers.Dense(1, activation='sigmoid')(x)
-
-    model = keras.Model(inputs=inputs,outputs=out)
-
-    return model
-
-#test net
-def testNet(imsize=64,channel=1):
-
-    inputs = keras.layers.Input(shape=(imsize,imsize,channel))
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(inputs)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x)
-    x = keras.layers.MaxPooling2D((2, 2))(x)
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x)
-    x = keras.layers.Flatten()(x)
-    x = keras.layers.Dense(16, activation='relu')(x)
-    out = keras.layers.Dense(1, activation='sigmoid')(x)
-
-    model = keras.Model(inputs=inputs,outputs=out)
-
-    return model
 
 #test code for this module
 if __name__ == '__main__':
 
     from sklearn.model_selection import KFold
     from sklearn.model_selection import train_test_split
-
-    lr=0.0004
-    batch_size = 128
-    epochs = 1500
-    optimizer = "adamax"
     
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\yr_dataset_1000_cleansing',data_augmentation=True)
     (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\test_data_50012')
+    test_imgs = np.copy(test_images)
 
     #normalization
-    train_images = train_images / 255.0
     test_images = test_images / 255.0
 
     #reshape
-    train_images = train_images.reshape(-1,64,64,1)
     test_images = test_images.reshape(-1,64,64,1)
 
     #setting model
-    model = testNet()
+    #model = load_model('./フォルダ名/' + model_file_name+'.h5')
 
     model.summary()
 
-    model.compile(optimizer=optimizer,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-    tf.keras.backend.set_value(model.optimizer.learning_rate, lr)
+    #predict
+    predicts = model.predict_classes(test_images)
 
-    # Fit the model
-    history = model.fit(train_images, train_labels,
-              batch_size=batch_size,
-              epochs=epochs)
+    #save error image
+    i=0
+    for img,label,predict in test_imgs,test_labels,predicts:
+        if predict != label:
+            if label == 0:
+                cv2.imwrite(r"C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\denoising\splited" + r"\error_%03.f"%(i) + ".tif",img)
+            if label == 1:
+                cv2.imwrite(r"C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\denoising\splited" + r"\error_%03.f"%(i) + ".tif",img)
+            i+=1
+
+
 
     #Evaluate
     test_loss, test_acc = model.evaluate(test_images, test_labels, batch_size=128)
     
     print("test_loss:{}".format(test_loss))
     print("test_acc :{}".format(test_acc))
-
-    #save model
-    model.save('test_model.h5')
