@@ -130,7 +130,7 @@ def tvDenoise(img,lamda=0.3,timestep=0.01):
 #test code for this module
 if __name__ == '__main__':
 
-    img_load = cv2.imread(r"C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\DSC_0573.tif")
+    img_load = cv2.imread(r"C:\Users\sirim\Pictures\outside_image_tif_trim\denoising\bin\result61.tif")
 
     #plot original image
     #I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
@@ -156,10 +156,10 @@ if __name__ == '__main__':
     #cv2.imshow("img_v",img_v)
     #cv2.waitKey(0)
 
-    img_r = tvDenoiseSB(img_v,CYCLE=20)
+    img_r = tvDenoiseSB(img_v,CYCLE=10)
 
     #save image
-    cv2.imwrite(r'C:\Users\sirim\Pictures\outdoor1_tif_DSC_0573_trim\denoising\DSC_0573.tif',img_r)
+    cv2.imwrite(r'C:\Users\sirim\Pictures\outside_image_tif_trim\denoising\bin\result61_tv.tif',img_r)
 
 
 
