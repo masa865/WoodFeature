@@ -1,6 +1,6 @@
 #for Features extraction of wood
-import tensorflow as tf
-from tensorflow import keras
+#import tensorflow as tf
+#from tensorflow import keras
 
 import cv2
 
@@ -45,14 +45,17 @@ def createFlag(img,v_split,h_split,predict_results,split_size=64):
     return flag_img
 
 #calculate coordinate of circle
-def getCircleXY(radius,center=(0,0),divn=10):
+def getCircleXY(radius,center_x,center_y):
 
-    theta = np.linspace(0,2*np.pi,divn) #radian
+    X_up = np.arange(center_x - radius, center_x + radius + 1)
+    X = np.append(X_up,X_up[1:len(X_up)-1])
+    #print(X)
+    Y_up = np.sqrt(radius**2 - (X_up-center_x)**2) + center_y
+    Y_down = -Y_up + 2*center_y
+    Y = np.append(Y_up,Y_down[1:len(Y_down)-1])
+    #print(Y)
 
-    X = center[0] + radius * np.cos(theta) #X is ndarray of x coordinate
-    Y = center[1] + radius * np.sin(theta) #Y is ndarray of y coordinate
-
-    return (X,Y)
+    return (X,Y) #X,Y are numpy array
 
 #obtain edges of the annual rings
 def obtainEdges(img,minVal=100,maxVal=200,filter_size=3):
@@ -62,22 +65,37 @@ def obtainEdges(img,minVal=100,maxVal=200,filter_size=3):
     return img_edge
 
 def getNR(img,center_x,center_y,outerX,outerY):
-    #img:edge image
+    #img is assumed edge image
 
     ring_nums = np.zeros_like(outerX)
     line_index = 0
-    for outerx,outery in outerX,outerY:
+
+
+    for outerx,outery in list(zip(outerX,outerY)):
+        i=0
         intersept = (center_y - outery) / (center_x - outerx)
         x = math.ceil(outerx)
+        same_line_flag = False
         while x != center_x:
-            print("loop checker")
-            y = math.ceil(intersept*(x-center_x)+senter_y)
-            if(img[x,y]==1):
-                ring_nums[line_index]+=1
+            i+=1
+            print(i)
+            y = math.ceil(intersept*(x-center_x)+center_y)
+            if(img[x,y] != 0):
+                if(same_line_flag==False):
+                    ring_nums[line_index]+=1
+                    same_line_flag=True
+            else:
+                same_line_flag=False
+            
+            if(x>center_x):
+                x-=1
+            else:
+                x+=1
         line_index+=1
 
     NR = np.floor(np.mean(ring_nums))
-
+    print(ring_nums)
+    print(NR)
     return NR
 
 #main function of this module
@@ -97,7 +115,7 @@ def extractFeature(img,center_x,center_y,radius,model):
     flag_img = createFlag(img,v_split,h_split,predict_results,split_size)
 
     #get coordinate of outer wood
-    (outerX,outerY) = getCircleXY(radius,(center_x),(center_y),divn=20)
+    (outerX,outerY) = getCircleXY(radius,center_x,center_y)
 
     #extract good line
     line_values = np.zeros_like(outerX)
@@ -136,60 +154,37 @@ def extractFeature(img,center_x,center_y,radius,model):
     #---------------------------------------------
     return NR,AR,AC15,AO15
 
+def extractByTraditional(img,center_x,center_y,radius):
+    #img:v channel of hsv
+    NR=0
+    AR=0
+    AC15=0
+    AO15=0
+
+    #get coordinate of outer wood
+    (outerX,outerY) = getCircleXY(radius,center_x,center_y)
+
+    #1.obtain edge image
+    img_edge = obtainEdges(img)
+
+    cv2.imshow('img_edge',img_edge)
+    cv2.waitKey(0)
+
+    #2.calculate NR
+    NR = getNR(img_edge,center_x,center_y,outerX[::10],outerY[::10])
+
+
+
+    return NR,AR,AC15,AO15
+
 #test code for this module
 if __name__ == '__main__':
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\new\deru.jpg",cv2.IMREAD_GRAYSCALE)
-
-    cv2.imshow('load_img',load_img)
-    cv2.waitKey(0)
-
-    #hist_img = cv2.equalizeHist(load_img)
-    hist_img = np.array((load_img - np.mean(load_img)) / np.std(load_img) * 16 + 128,dtype=np.uint8) #normalization
-    hist_img = np.clip(hist_img, 0, 255)
-    cv2.imshow('hist_img',hist_img)
-    cv2.waitKey(0)
-
-    #img_blur = cv2.medianBlur(load_img,3)
-
-    #edge = obtainEdges(img_blur)
-
-    #cv2.imshow('load_img',load_img)
-    #cv2.waitKey(0)
-    #cv2.imshow('img_blur',img_blur)
-    #cv2.waitKey(0)
-    #cv2.imshow('edge',edge)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\test_circle.png",0)
+    tmp_img = np.copy(load_img)
+    #img_c = cv2.circle(tmp_img,(172,185), 308-200, (0,0,255), -1)
+    #cv2.imshow("circle",tmp_img)
     #cv2.waitKey(0)
 
-    #x,y = getCircleXY(2,(100,100))
-    #print(x)
-    #print(y)
-
-    model = tf.keras.models.load_model('test_model_73_rotrev.h5')
-    model.summary()
-
-    splited_imgs,v_split,h_split = splitImg(load_img)
-    splited_imgs = splited_imgs /255.0
-    splited_imgs = splited_imgs.reshape(-1,64,64,1)
-
-    predictions = model.predict(splited_imgs)
-    predict_results = predictions.argmax(axis=1) #result list of classification
-    #print(predict_results)
-
-    flag_img = createFlag(load_img,v_split,h_split,predict_results,split_size=64)
-
-    print(flag_img.shape)
-
-    line_values = np.array([10,11,12,13,14,15,16,17,18,19,20])
-    median = np.median(line_values)
-    good_line_indexes = np.where(line_values >= median)
-    print("median:{}".format(median))
-    print(good_line_indexes)
-    print(good_line_indexes[0])
-
-    #print(splited_imgs.shape)
-    #cv2.imshow('splited_imgs',splited_imgs[0])
-    #cv2.waitKey(0)
-
-
+    NR,AR,AC15,AO15=extractByTraditional(load_img,172,185,308-160)
 
