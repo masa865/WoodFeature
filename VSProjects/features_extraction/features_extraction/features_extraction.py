@@ -58,8 +58,8 @@ def getCircleXY(radius,center_x,center_y):
     return (X,Y) #X,Y are numpy array
 
 #obtain edges of the annual rings
-def obtainEdges(img,minVal=100,maxVal=200,filter_size=3):
-
+def obtainEdges(img,minVal=10,maxVal=50,filter_size=3):
+    #minVal=100,maxVal=200,filter_size=3
     img_edge = cv2.Canny(img,minVal,maxVal,filter_size)
 
     return img_edge
@@ -207,12 +207,16 @@ def extractByTraditional(img,center_x,center_y,radius):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\test_circle.png",0)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\50012.tif",0)
 
-    #img_edge = obtainEdges(load_img)
+    img_edge = obtainEdges(load_img)
+    cv2.imshow("img_edge",img_edge)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 
     #load_img,172,185,308-160
-    NR,AR,AC15,AO15=extractByTraditional(load_img,180,170,308-160)
+    #NR,AR,AC15,AO15=extractByTraditional(load_img,180,170,308-160)
 
 
     #center_x = 172
