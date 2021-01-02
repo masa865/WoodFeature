@@ -219,7 +219,7 @@ if __name__ == '__main__':
     out_dim4 = [16]
 
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\otsu_128px\otsu_128px\before_otsu')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\th2_128px\th2_128px\before_th2')
     (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\dataset_128px\test_data')
 
     #divide into training data and test data(90%:10%)
