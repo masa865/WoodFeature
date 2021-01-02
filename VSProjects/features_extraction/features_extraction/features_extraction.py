@@ -179,12 +179,36 @@ def extractByTraditional(img,center_x,center_y,radius):
 
 #test code for this module
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
 
     load_img = cv2.imread(r"C:\Users\sirim\Pictures\test_circle.png",0)
-    tmp_img = np.copy(load_img)
-    #img_c = cv2.circle(tmp_img,(172,185), 308-200, (0,0,255), -1)
-    #cv2.imshow("circle",tmp_img)
-    #cv2.waitKey(0)
+    img_edge = obtainEdges(load_img)
 
-    NR,AR,AC15,AO15=extractByTraditional(load_img,172,185,308-160)
+    #NR,AR,AC15,AO15=extractByTraditional(load_img,172,185,308-160)
+    center_x = 172
+    center_y = 185
+    (outerX,outerY) = getCircleXY(308-160,172,185)
+    plt.plot(outerX, outerY,marker='.',linestyle='None')
 
+    for outerx,outery in list(zip(outerX[::10],outerY[::10])):
+        if(center_x-outerx != 0):
+            if (outerx > center_x):
+                X = np.arange(center_x, outerx+0.1,0.1)
+            if(outerx < center_x):
+                X = np.arange(outerx,center_x+0.1,0.1)
+
+            intersept = (center_y - outery) / (center_x - outerx)
+            print(intersept)
+            Y = intersept*(X-center_x)+center_y
+
+            if(outery>center_y):np.clip(Y, None, outery)
+            else: np.clip(Y,outery, None)
+
+            plt.plot(X, Y,marker='.',linestyle='None')
+
+    plt.axis("equal")
+    plt.grid(color="0.8")
+    plt.show() # 画面に表示
+
+    cv2.imshow("result",img_edge)
+    cv2.waitKey(0)
