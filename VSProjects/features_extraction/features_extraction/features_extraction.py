@@ -58,7 +58,7 @@ def getCircleXY(radius,center_x,center_y):
     return (X,Y) #X,Y are numpy array
 
 #obtain edges of the annual rings
-def obtainEdges(img,minVal=30,maxVal=40,filter_size=3):
+def obtainEdges(img,minVal=60,maxVal=60,filter_size=3):
     #minVal=100,maxVal=200,filter_size=3
     img_edge = cv2.Canny(img,minVal,maxVal,filter_size,)
 
@@ -81,6 +81,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
     ar_array = []
     line_index = 0
     dist_th = 1.5 #distance threshold
+    im_height,im_width = img.shape
 
     img_copy = np.copy(img)
 
@@ -96,10 +97,18 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
             Y = intersept*(X-center_x)+center_y
             same_line_flag = False
 
+            #np.clip(X,None,im_width-10)
+            #np.clip(Y, None, im_height-10)
+
+            X[X >= im_width] = im_width - 1
+            Y[Y >= im_height] = im_height - 1
+
             if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
                 for x,y in list(zip(X,Y)):
-                    img_copy[math.ceil(x),math.ceil(y)]=120
-                    if(img[math.ceil(x),math.ceil(y)] != 0):
+                   
+                    img_copy[math.ceil(y),math.ceil(x)]=120
+
+                    if(img[math.ceil(y),math.ceil(x)] != 0):
                         if(same_line_flag == False):
                             ring_nums[line_index] += 1
                             ring_pos.append((x,y))
@@ -129,6 +138,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
 
+    cv2.namedWindow('img_copy', cv2.WINDOW_KEEPRATIO)
     cv2.imshow("img_copy",img_copy)
     cv2.waitKey(0)
 
@@ -140,12 +150,16 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 
     print("-result--------")
     print("ring_nums:")
-    print(ring_nums)
+    print(ring_nums[np.nonzero(ring_nums)])
     print("NR(floor):{}".format(NR))
     print("NR(float):{}".format(ring_nums[np.nonzero(ring_nums)].mean()))
-    print("AR(float):{}".format(AR))
-    print("AC15(float):{}".format(AC15))
-    print("AO15(float):{}".format(AO15))
+    print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
+    count = np.bincount(ring_nums[np.nonzero(ring_nums)])
+    ans = np.argmax(count)
+    print("NR(mode):{}".format(ans))
+    print("AR:{:.2f}px".format(AR))
+    print("AC15:{:.2f}px".format(AC15))
+    print("AO15:{:.2f}px".format(AO15))
 
     return NR,AR,AC15,AO15
 
@@ -221,6 +235,7 @@ def extractByTraditional(img,center_x,center_y,radius):
     #1.obtain edge image
     img_edge = obtainEdges(img)
 
+    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
     cv2.imshow('img_edge',img_edge)
     cv2.waitKey(0)
 
@@ -232,27 +247,63 @@ def extractByTraditional(img,center_x,center_y,radius):
 #test code for this module
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    #import sys 
+    import sys 
     #sys.exit()
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\test_circle.png",0)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
 
-    #img_edge = obtainEdges(load_img)
-    #cv2.imshow("img_edge",img_edge)
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    img_edge = obtainEdges(load_img,minVal=60,maxVal=60,filter_size=3)
+    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    cv2.imshow("img_edge",img_edge)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    #sys.exit()
 
     #cv2.imwrite(r"C:\Users\sirim\Pictures\indoor_canny\50012.tif",img_edge)
 
 
     #load_img,172,185,308-160
-    NR,AR,AC15,AO15=extractByTraditional(load_img,180,170,308-160)
+    blur = cv2.medianBlur(load_img,5)
+    #cimg = obtainEdges(blur,minVal=50,maxVal=100,filter_size=3)
+    #cv2.namedWindow('detected circles', cv2.WINDOW_NORMAL)
+    #cv2.imshow('detected circles',cimg)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+
+    #sys.exit()
+
+    cimg = np.copy(blur)
+    circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
+                            param1=100,param2=50,minRadius=500,maxRadius=900)
+    circles = np.uint16(np.around(circles))
+    for i in circles[0,:]:
+        # draw the outer circle
+        cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+        # draw the center of the circle
+        cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+
+    print("width:{},height:{}".format(load_img.shape[1],load_img.shape[0]))
+    print("center:({},{})".format(i[0],i[1]))
+    print("radius:{}px".format(i[2]))
+    cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
+    cv2.imshow('detected circles',cimg)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    #sys.exit()
+
+    NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
 
-    #center_x = 172
-    #center_y = 185
-    #(outerX,outerY) = getCircleXY(308-160,172,185)
+    #center_x = i[0]
+    #center_y = i[1]
+    #(outerX,outerY) = getCircleXY(i[2],center_x,center_y)
     #plt.plot(outerX, outerY,marker='.',linestyle='None')
+
+    #plt.axis("equal")
+    #plt.grid(color="0.8")
+    #plt.show() # 画面に表示
 
     #for outerx,outery in list(zip(outerX[::10],outerY[::10])):
     #    if(center_x-outerx != 0):
@@ -262,11 +313,12 @@ if __name__ == '__main__':
     #            X = np.arange(outerx,center_x+0.1,0.1)
 
     #        intersept = (center_y - outery) / (center_x - outerx)
-    #        print(intersept)
+            
     #        Y = intersept*(X-center_x)+center_y
+    #        if(Y.max() >= 1200): print(Y)
 
-    #        if(outery>center_y):np.clip(Y, None, outery)
-    #        else: np.clip(Y,outery, None)
+            #if(outery>center_y):np.clip(Y, None, outery)
+            #else: np.clip(Y,outery, None)
 
     #        plt.plot(X, Y,marker='.',linestyle='None')
 
