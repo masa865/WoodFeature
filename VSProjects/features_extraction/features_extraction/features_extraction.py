@@ -58,13 +58,13 @@ def getCircleXY(radius,center_x,center_y):
     return (X,Y) #X,Y are numpy array
 
 #obtain edges of the annual rings
-def obtainEdges(img,minVal=10,maxVal=50,filter_size=3):
+def obtainEdges(img,minVal=30,maxVal=40,filter_size=3):
     #minVal=100,maxVal=200,filter_size=3
-    img_edge = cv2.Canny(img,minVal,maxVal,filter_size)
+    img_edge = cv2.Canny(img,minVal,maxVal,filter_size,)
 
     return img_edge
 
-def getNR(img,center_x,center_y,outerX,outerY):
+def calcFeatures(img,center_x,center_y,outerX,outerY):
     #---------------------------------------------
     #NR  :number of annual rings
     #AR  :average of every ring(px)
@@ -73,45 +73,81 @@ def getNR(img,center_x,center_y,outerX,outerY):
     #img : assumed edge image
     #ring_nums[line_index] : ring num of "line_index" th line
     #---------------------------------------------
-
     ring_nums = np.zeros_like(outerX)
+    ring_widths = []
+    ring_pos = [] #ring positions
+    ac15_array = []
+    ao15_array = []
+    ar_array = []
     line_index = 0
+    dist_th = 1.5 #distance threshold
 
     img_copy = np.copy(img)
 
     for outerx,outery in list(zip(outerX,outerY)):
-
-        if(center_x-outerx != 0): #intersept is not infinity
+        if(center_x-outerx != 0): #not to divide by 0(intersept)
             if (outerx > center_x):
                 X = np.arange(center_x, outerx+0.1,0.1)
             if(outerx < center_x):
-                X = np.arange(outerx,center_x+0.1,0.1)
+                X_rev = np.arange(outerx,center_x+0.1,0.1)
+                X = X_rev[::-1]
 
             intersept = (center_y - outery) / (center_x - outerx)
             Y = intersept*(X-center_x)+center_y
             same_line_flag = False
 
-            if(abs(Y[0]-Y[1]) < 1.5): #distance between the points is not too large
+            if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
                 for x,y in list(zip(X,Y)):
                     img_copy[math.ceil(x),math.ceil(y)]=120
                     if(img[math.ceil(x),math.ceil(y)] != 0):
                         if(same_line_flag == False):
                             ring_nums[line_index] += 1
+                            ring_pos.append((x,y))
+
                             same_line_flag = True
                     else:
                         same_line_flag = False
-        line_index += 1
+
+                if(len(ring_pos) >= 2):
+                    sum = 0
+                    for i in range(len(ring_pos)-1):
+                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+                    ar_array.append(sum/(len(ring_pos)-1))
+
+                if(len(ring_pos) >= 15):
+                    sum = 0
+                    for i in range(14):
+                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+                    ac15_array.append(sum/14)
+
+                    ring_pos_rev = ring_pos[::-1]
+                    sum = 0
+                    for i in range(14):
+                        sum += math.sqrt(((ring_pos_rev[i+1])[0] - (ring_pos_rev[i])[0]) ** 2 + ((ring_pos_rev[i+1])[1] - (ring_pos_rev[i])[1]) ** 2)
+                    ao15_array.append(sum/14)
+        
+        ring_pos = [] #reset ring_pos
+        line_index += 1 #next line
 
     cv2.imshow("img_copy",img_copy)
     cv2.waitKey(0)
 
-    NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
+    NR,AR,AC15,AO15 = 0,0,0,0
+    if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
+    if(len(ar_array) > 0):AR = np.array(ar_array).mean()
+    if(len(ac15_array) > 0):AC15 = np.array(ac15_array).mean()
+    if(len(ao15_array) > 0):AO15 = np.array(ao15_array).mean()
+
     print("-result--------")
     print("ring_nums:")
     print(ring_nums)
     print("NR(floor):{}".format(NR))
     print("NR(float):{}".format(ring_nums[np.nonzero(ring_nums)].mean()))
-    return NR
+    print("AR(float):{}".format(AR))
+    print("AC15(float):{}".format(AC15))
+    print("AO15(float):{}".format(AO15))
+
+    return NR,AR,AC15,AO15
 
 #main function of this module
 def extractFeature(img,center_x,center_y,radius,model):
@@ -170,24 +206,14 @@ def extractFeature(img,center_x,center_y,radius,model):
     img_edge = obtainEdges(img)
 
     #----------------------------------------------------------------------------
-    #---3.calculate NR-----------------------------------------------------------
+    #---3.calculate features-----------------------------------------------------------
     #----------------------------------------------------------------------------
-    NR = getNR(img_edge,center_x,center_y,good_outerX,good_outerY)
-
-    #calculate AR
-
-    #calculate AC15
-
-    #calculate AO15
+    NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,good_outerX,good_outerY)
 
     return NR,AR,AC15,AO15
 
 def extractByTraditional(img,center_x,center_y,radius):
     #img:v channel of hsv
-    NR=0
-    AR=0
-    AC15=0
-    AO15=0
 
     #get coordinate of outer wood
     (outerX,outerY) = getCircleXY(radius,center_x,center_y)
@@ -198,25 +224,29 @@ def extractByTraditional(img,center_x,center_y,radius):
     cv2.imshow('img_edge',img_edge)
     cv2.waitKey(0)
 
-    #2.calculate NR
-    NR = getNR(img_edge,center_x,center_y,outerX[::10],outerY[::10])
+    #2.calculate feature
+    NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,outerX[::10],outerY[::10])
 
     return NR,AR,AC15,AO15
 
 #test code for this module
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    #import sys 
+    #sys.exit()
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\50012.tif",0)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\test_circle.png",0)
 
-    img_edge = obtainEdges(load_img)
-    cv2.imshow("img_edge",img_edge)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #img_edge = obtainEdges(load_img)
+    #cv2.imshow("img_edge",img_edge)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+
+    #cv2.imwrite(r"C:\Users\sirim\Pictures\indoor_canny\50012.tif",img_edge)
 
 
     #load_img,172,185,308-160
-    #NR,AR,AC15,AO15=extractByTraditional(load_img,180,170,308-160)
+    NR,AR,AC15,AO15=extractByTraditional(load_img,180,170,308-160)
 
 
     #center_x = 172
