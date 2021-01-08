@@ -31,7 +31,7 @@ def splitImg(img,split_size=128):
     return np.array(splited_imgs),v_split,h_split
 
 #create flag image
-def createFlag(img,v_split,h_split,predict_results,split_size=64):
+def createFlag(img,v_split,h_split,predict_results,split_size=128):
 
     flag_img = np.zeros_like(img)
     extractable_flag = 1
@@ -39,6 +39,8 @@ def createFlag(img,v_split,h_split,predict_results,split_size=64):
     k = 0
     for i in range(v_split):
         for j in range(h_split):
+            print("row:({}:{})".format(i*split_size,i*split_size+split_size))
+            print("col:({}:{})".format(j*split_size,j*split_size+split_size))
             if(predict_results[j+k]):
                 flag_img[i*split_size:i*split_size+split_size,
                          j*split_size:j*split_size+split_size] = extractable_flag
@@ -84,6 +86,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
     im_height,im_width = img.shape
 
     img_copy = np.copy(img)
+    img_c = cv2.cvtColor(img_copy,cv2.COLOR_GRAY2BGR)
 
     for outerx,outery in list(zip(outerX,outerY)):
         if(center_x-outerx != 0): #not to divide by 0(intersept)
@@ -106,7 +109,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
             if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
                 for x,y in list(zip(X,Y)):
                    
-                    img_copy[math.ceil(y),math.ceil(x)]=120
+                    img_c[math.ceil(y),math.ceil(x),2]=255
 
                     if(img[math.ceil(y),math.ceil(x)] != 0):
                         if(same_line_flag == False):
@@ -138,8 +141,8 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
 
-    cv2.namedWindow('img_copy', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow("img_copy",img_copy)
+    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
+    cv2.imshow("img_c",img_c)
     cv2.waitKey(0)
 
     NR,AR,AC15,AO15 = 0,0,0,0
@@ -186,6 +189,7 @@ def extractFeature(img,center_x,center_y,radius,model):
     #extract good line
     line_values = np.zeros_like(outerX)
     line_index = 0
+    dist_th = 1.5
     for outerx,outery in outerX,outerY:
 
         if(center_x-outerx != 0): #intersept is not infinity
@@ -195,12 +199,11 @@ def extractFeature(img,center_x,center_y,radius,model):
                 X = np.arange(outerx,center_x+0.1,0.1)
 
             intersept = (center_y - outery) / (center_x - outerx)
-            #print(intersept)
             Y = intersept*(X-center_x)+center_y
 
-            if(abs(Y[0]-Y[1]) < 1.5): #distance between the points is not too large
+            if(abs(Y[0]-Y[1]) < dist_th): #distance between the points is not too large
                 for x,y in list(zip(X,Y)):
-                    if(img[math.ceil(x),math.ceil(y)] != 0):
+                    if(flag_img[math.ceil(y),math.ceil(x)] != 0):
                         line_values[line_index] += 1
         line_index += 1
 
@@ -218,6 +221,10 @@ def extractFeature(img,center_x,center_y,radius,model):
     #---2.obtain edge image------------------------------------------------------
     #----------------------------------------------------------------------------
     img_edge = obtainEdges(img)
+
+    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    cv2.imshow('img_edge',img_edge)
+    cv2.waitKey(0)
 
     #----------------------------------------------------------------------------
     #---3.calculate features-----------------------------------------------------------
@@ -252,11 +259,11 @@ if __name__ == '__main__':
 
     load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
 
-    img_edge = obtainEdges(load_img,minVal=60,maxVal=60,filter_size=3)
-    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow("img_edge",img_edge)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #img_edge = obtainEdges(load_img,minVal=60,maxVal=60,filter_size=3)
+    #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow("img_edge",img_edge)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #sys.exit()
 
@@ -294,7 +301,7 @@ if __name__ == '__main__':
     #sys.exit()
 
     NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
-
+    #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
 
     #center_x = i[0]
     #center_y = i[1]
