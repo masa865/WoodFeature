@@ -115,12 +115,13 @@ def gridSearch(train_data,train_label,test_data,test_label,
     # fix random seed for reproducibility
     seed = 7
     np.random.seed(seed)
-
+    n_splits=5
     # define X-fold cross validation
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
     X=train_data
     Y=train_label
+    histories = []
 
     for ac in activation:
         for op in optimizer:
@@ -149,6 +150,8 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                                             epochs=ep,
                                                             validation_data=(X[test],Y[test]),
                                                             verbose=1)
+                                            #
+                                            histories.append(history)
 
                                             # Evaluate
                                             scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -165,9 +168,23 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                         test_mean = np.mean(test_acces)
                                         test_std = np.std(test_acces)
 
+                                        Loss=np.zeros_like(h.history['loss'])
+                                        Val_loss=np.zeros_like(h.history['val_loss'])
+                                        Accuracy=np.zeros_like(h.history['accuracy'])
+                                        Val_accuracy=np.zeros_like(h.history['val_accuracy'])
+                                        for h in histories:
+                                            Loss += h.history['loss']
+                                            Val_loss += h.history['val_loss']
+                                            Accuracy += h.history['accuracy']
+                                            Val_accuracy += h.history['val_accuracy']
+                                        Loss = Loss / n_splits
+                                        Val_loss = Val_loss / n_splits
+                                        Accuracy = Accuracy / n_splits
+                                        Val_accuracy = Val_accuracy / n_splits
+
                                         #plot training & validation loss values
-                                        plt.plot(history.history['loss'])
-                                        plt.plot(history.history['val_loss'])
+                                        plt.plot(Loss)
+                                        plt.plot(Val_loss)
                                         plt.title('Model loss')
                                         plt.ylabel('Loss')
                                         plt.xlabel('Epoch')
@@ -175,8 +192,8 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                         plt.show()
 
                                         #plot training & validation acces
-                                        plt.plot(history.history['accuracy'])
-                                        plt.plot(history.history['val_accuracy'])
+                                        plt.plot(Accuracy)
+                                        plt.plot(Val_accuracy)
                                         plt.title('Model accuracy')
                                         plt.ylabel('Accuracy')
                                         plt.xlabel('Epoch')
@@ -210,7 +227,7 @@ if __name__ == '__main__':
     #parameter list for grid search
     activation = ["sigmoid"]
     optimizer = ["adamax"]
-    epochs = [1500]
+    epochs = [100]
     batch_size = [128]
     learn_rate = [0.0004]
     out_dim1 = [16]
