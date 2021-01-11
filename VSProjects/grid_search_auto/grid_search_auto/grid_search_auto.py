@@ -162,16 +162,18 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                             test_acces.append(test_acc*100)
 
                                         mean = np.mean(cvscores)
+                                        print("CV_ACC:{}".format(mean))
                                         std = np.std(cvscores)
+                                        print("CV_STD:±{}".format(std))
                                         print("%.2f%% (+/- %.2f%%)" % (mean, std))
 
                                         test_mean = np.mean(test_acces)
                                         test_std = np.std(test_acces)
 
-                                        Loss=np.zeros_like(h.history['loss'])
-                                        Val_loss=np.zeros_like(h.history['val_loss'])
-                                        Accuracy=np.zeros_like(h.history['accuracy'])
-                                        Val_accuracy=np.zeros_like(h.history['val_accuracy'])
+                                        Loss=np.zeros_like(histories[0].history['loss'])
+                                        Val_loss=np.zeros_like(histories[0].history['val_loss'])
+                                        Accuracy=np.zeros_like(histories[0].history['accuracy'])
+                                        Val_accuracy=np.zeros_like(histories[0].history['val_accuracy'])
                                         for h in histories:
                                             Loss += h.history['loss']
                                             Val_loss += h.history['val_loss']
@@ -227,7 +229,7 @@ if __name__ == '__main__':
     #parameter list for grid search
     activation = ["sigmoid"]
     optimizer = ["adamax"]
-    epochs = [100]
+    epochs = [50]
     batch_size = [128]
     learn_rate = [0.0004]
     out_dim1 = [16]
