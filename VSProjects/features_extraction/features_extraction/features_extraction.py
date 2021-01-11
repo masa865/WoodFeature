@@ -156,11 +156,12 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
     print("ring_nums:")
     print(ring_nums[np.nonzero(ring_nums)])
     print("NR(floor):{}".format(NR))
-    print("NR(float):{}".format(ring_nums[np.nonzero(ring_nums)].mean()))
-    print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
-    count = np.bincount(ring_nums[np.nonzero(ring_nums)])
-    ans = np.argmax(count)
-    print("NR(mode):{}".format(ans))
+    nr_std = np.std(ring_nums[np.nonzero(ring_nums)])
+    print("NR(float):{:.2f}(±{:.2f})".format(ring_nums[np.nonzero(ring_nums)].mean(),nr_std))
+    #print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
+    #count = np.bincount(ring_nums[np.nonzero(ring_nums)])
+    #ans = np.argmax(count)
+    #print("NR(mode):{}".format(ans))
     print("AR:{:.2f}px".format(AR))
     print("AC15:{:.2f}px".format(AC15))
     print("AO15:{:.2f}px".format(AO15))
@@ -271,7 +272,8 @@ if __name__ == '__main__':
     import sys 
     #sys.exit()
 
-    load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
+    #load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
 
     #img_edge = obtainEdges(load_img,minVal=60,maxVal=60,filter_size=3)
     #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
@@ -315,14 +317,15 @@ if __name__ == '__main__':
 
     #sys.exit()
 
-    #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+    NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
     #load_img = cv2.adaptiveThreshold(load_img,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,
     #                                 31,2)
     #cv2.imshow('load_img',load_img)
     #cv2.waitKey(0)
-    model = keras.models.load_model(r'C:\Users\VIgpu01\workspace(murakami)\grid_search_result\result20201230_otsu_128px_5fold.h5')
-    NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
+
+    #model = keras.models.load_model(r'C:\Users\VIgpu01\workspace(murakami)\grid_search_result\result20201230_otsu_128px_5fold.h5')
+    #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
 
     #center_x = i[0]
     #center_y = i[1]
