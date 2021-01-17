@@ -72,6 +72,8 @@ def tvDenoiseSB(img,CYCLE=150,MU=0.1,LAMBDA=0.3,TOL=5):
             b_x = b_x + (nablax_u - d_x)
             b_y = b_y + (nablay_u - d_y)
 
+    print([cyc,Err])
+
     reconstructed_img = u.astype(img.dtype)
 
     return reconstructed_img
@@ -130,7 +132,7 @@ def tvDenoise(img,lamda=0.3,timestep=0.01):
 #test code for this module
 if __name__ == '__main__':
 
-    img_load = cv2.imread(r"C:\Users\sirim\Pictures\indoor image\no ruler\49804.tif")
+    img_load = cv2.imread(r"C:\Users\sirim\Pictures\trim_5000\DSC_0620.tif")
 
     #plot original image
     #I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
@@ -156,10 +158,10 @@ if __name__ == '__main__':
     #cv2.imshow("img_v",img_v)
     #cv2.waitKey(0)
 
-    img_r = tvDenoiseSB(img_v,CYCLE=50)
+    img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.3,TOL=5)
 
     #save image
-    cv2.imwrite(r'C:\Users\sirim\Pictures\indoor_denoised\49804.tif',img_r)
+    cv2.imwrite(r'C:\Users\sirim\Pictures\trim_5000\denoising\DSC_0620.tif',img_r)
 
 
 
