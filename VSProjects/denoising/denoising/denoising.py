@@ -132,7 +132,7 @@ def tvDenoise(img,lamda=0.3,timestep=0.01):
 #test code for this module
 if __name__ == '__main__':
 
-    img_load = cv2.imread(r"C:\Users\sirim\Pictures\trim_5000\DSC_0620.tif")
+    #img_load = cv2.imread(r"C:\Users\sirim\Pictures\trim_5000\DSC_0620.tif")
 
     #plot original image
     #I_t = cv2.cvtColor(img_load, cv2.COLOR_RGB2GRAY)
@@ -153,16 +153,26 @@ if __name__ == '__main__':
     #cv2.imshow("concat",im_h)
     #cv2.waitKey(0)
 
-    img_hsv = cv2.cvtColor(img_load, cv2.COLOR_BGR2HSV)
-    img_h,img_s,img_v = cv2.split(img_hsv)
+    #img_hsv = cv2.cvtColor(img_load, cv2.COLOR_BGR2HSV)
+    #img_h,img_s,img_v = cv2.split(img_hsv)
     #cv2.imshow("img_v",img_v)
     #cv2.waitKey(0)
 
-    img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.3,TOL=5)
+    #img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.3,TOL=5)
 
     #save image
-    cv2.imwrite(r'C:\Users\sirim\Pictures\trim_5000\denoising\DSC_0620.tif',img_r)
+    #cv2.imwrite(r'C:\Users\sirim\Pictures\trim_5000\denoising\DSC_0620.tif',img_r)
 
+    #for many image
+    import pathlib
+    root_Path = pathlib.Path(r"C:\Users\sirim\Downloads\indoor")
+    file_list = list(root_Path.iterdir())
+    for fPath in file_list:
+        img_load = cv2.imread(str(fPath))
+        img_hsv = cv2.cvtColor(img_load, cv2.COLOR_BGR2HSV)
+        img_h,img_s,img_v = cv2.split(img_hsv)
+        img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.3,TOL=5)
+        cv2.imwrite(r'C:\Users\sirim\Pictures\indoor_denoised\\' + fPath.name,img_r)
 
 
 
