@@ -284,8 +284,8 @@ if __name__ == '__main__':
     import sys 
     #sys.exit()
 
-    #load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
-    load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
+    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
+    #load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
     #load_img = cv2.imread(r"E:\traning_data(murakami)\DSC_0573_g.tif",0)
     cv2.namedWindow('load_img', cv2.WINDOW_KEEPRATIO)
     cv2.imshow("load_img",load_img)
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    #sys.exit()
+    sys.exit()
 
     #start =time.time()
     #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
