@@ -1,6 +1,6 @@
 #for Features extraction of wood
-import tensorflow as tf
-from tensorflow import keras
+#import tensorflow as tf
+#from tensorflow import keras
 
 import cv2
 
@@ -62,8 +62,11 @@ def getCircleXY(radius,center_x,center_y):
 
 #obtain edges of the annual rings
 #60,60
-def obtainEdges(img,minVal=60,maxVal=60,filter_size=3):
+#0p01=80,80
+def obtainEdges(img,minVal=80,maxVal=80,filter_size=3):
     #minVal=100,maxVal=200,filter_size=3
+
+    print("debug> Canny param:minVal={},maxVal={}".format(minVal,maxVal))
     img_edge = cv2.Canny(img,minVal,maxVal,filter_size,)
 
     return img_edge
@@ -111,9 +114,9 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
             if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
                 for x,y in list(zip(X,Y)):
                    
-                    img_c[math.ceil(y),math.ceil(x),2]=255
+                    img_c[math.floor(y),math.floor(x),2]=255
 
-                    if(img[math.ceil(y),math.ceil(x)] != 0):
+                    if(img[math.floor(y),math.floor(x)] != 0):
                         if(same_line_flag == False):
                             ring_nums[line_index] += 1
                             ring_pos.append((x,y))
@@ -173,6 +176,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 #main function of this module
 def extractFeature(img,center_x,center_y,radius,model):
     #img:v channel of hsv
+    print("debug> mode:new method")
     img_tmp = np.copy(img)
     #----------------------------------------------------------------------------
     #---1.extract Low-noise line--------------------------------------------------
@@ -260,6 +264,7 @@ def extractFeature(img,center_x,center_y,radius,model):
 
 def extractByTraditional(img,center_x,center_y,radius):
     #img:v channel of hsv
+    print("debug> mode:traditional method")
 
     #get coordinate of outer wood
     (outerX,outerY) = getCircleXY(radius,center_x,center_y)
@@ -274,7 +279,7 @@ def extractByTraditional(img,center_x,center_y,radius):
     cv2.destroyAllWindows()
 
     #2.calculate feature
-    NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,outerX,outerY)
+    NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,outerX[::10],outerY[::10])
 
     return NR,AR,AC15,AO15
 
@@ -282,22 +287,25 @@ def extractByTraditional(img,center_x,center_y,radius):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import sys 
+    import pathlib
     #sys.exit()
 
-    load_img = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised\49804.tif",0)
+    load_img_c = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised_lm0p01\B46404.tif")
+    img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
+    img_h,img_s,load_img = cv2.split(img_hsv)
     #load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
     #load_img = cv2.imread(r"E:\traning_data(murakami)\DSC_0573_g.tif",0)
     cv2.namedWindow('load_img', cv2.WINDOW_KEEPRATIO)
     cv2.imshow("load_img",load_img)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-    #img_edge = obtainEdges(load_img,minVal=40,maxVal=40,filter_size=3)
-    #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
-    #cv2.imshow("img_edge",img_edge)
-    #cv2.waitKey(0)
     #cv2.destroyAllWindows()
+
+
+    img_edge = obtainEdges(load_img,minVal=80,maxVal=80,filter_size=3)
+    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    cv2.imshow("img_edge",img_edge)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     #sys.exit()
 
@@ -317,7 +325,7 @@ if __name__ == '__main__':
     #49804.tif (blur,cv2.HOUGH_GRADIENT,1,500,param1=100,param2=50,minRadius=500,maxRadius=900)
     cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
     circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
-                            param1=100,param2=50,minRadius=500,maxRadius=900)
+                            param1=100,param2=50,minRadius=400,maxRadius=900)
     circles = np.uint16(np.around(circles))
     for i in circles[0,:]:
         # draw the outer circle
@@ -334,23 +342,23 @@ if __name__ == '__main__':
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    sys.exit()
+    #sys.exit()
 
-    #start =time.time()
-    #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
-    #elapsed_time =time.time()-start
-    #print("elapsed_time:{}".format(elapsed_time)+"[sec]")
+    start =time.time()
+    NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+    elapsed_time =time.time()-start
+    print("elapsed_time:{}".format(elapsed_time)+"[sec]")
 
     #load_img = cv2.adaptiveThreshold(load_img,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,
     #                                 31,2)
     #cv2.imshow('load_img',load_img)
     #cv2.waitKey(0)
 
-    start =time.time()
-    model = keras.models.load_model(r'C:\Users\VIgpu01\workspace(murakami)\grid_search_result\result20201230_otsu_128px_5fold.h5')
-    NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
-    elapsed_time =time.time()-start
-    print("elapsed_time:{}".format(elapsed_time)+"[sec]")
+    #start =time.time()
+    #model = keras.models.load_model(r'C:\Users\VIgpu01\workspace(murakami)\grid_search_result\result20201230_otsu_128px_5fold.h5')
+    #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
+    #elapsed_time =time.time()-start
+    #print("elapsed_time:{}".format(elapsed_time)+"[sec]")
 
     #center_x = i[0]
     #center_y = i[1]
