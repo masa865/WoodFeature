@@ -171,8 +171,8 @@ if __name__ == '__main__':
         img_load = cv2.imread(str(fPath))
         img_hsv = cv2.cvtColor(img_load, cv2.COLOR_BGR2HSV)
         img_h,img_s,img_v = cv2.split(img_hsv)
-        img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.3,TOL=5)
-        cv2.imwrite(r'C:\Users\sirim\Pictures\indoor_denoised\\' + fPath.name,img_r)
+        img_r = tvDenoiseSB(img_v,CYCLE=10,MU=0.1,LAMBDA=0.1,TOL=5)
+        cv2.imwrite(r'C:\Users\sirim\Pictures\indoor_denoised_lm0p01\\' + fPath.name,img_r)
 
 
 
