@@ -186,7 +186,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
 
                                         #plot training & validation loss values
                                         plt.plot(Loss)
-                                        plt.plot(Val_loss)
+                                        plt.plot(Val_loss,linestyle = "dashed")
                                         plt.title('Model loss')
                                         plt.ylabel('Loss')
                                         plt.xlabel('Epoch')
@@ -195,7 +195,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
 
                                         #plot training & validation acces
                                         plt.plot(Accuracy)
-                                        plt.plot(Val_accuracy)
+                                        plt.plot(Val_accuracy,linestyle = "dashed")
                                         plt.title('Model accuracy')
                                         plt.ylabel('Accuracy')
                                         plt.xlabel('Epoch')
@@ -229,7 +229,7 @@ if __name__ == '__main__':
     #parameter list for grid search
     activation = ["sigmoid"]
     optimizer = ["adamax"]
-    epochs = [50]
+    epochs = [1500]
     batch_size = [128]
     learn_rate = [0.0004]
     out_dim1 = [16]
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     out_dim4 = [16]
 
     #import data
-    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\th2_128px\th2_128px\before_th2')
+    (train_images,train_labels) = make_dataset(r'E:\traning_data(murakami)\128px_100\th2\th2')
     (test_images,test_labels) = make_dataset(r'E:\traning_data(murakami)\dataset_128px\test_data')
 
     #divide into training data and test data(90%:10%)
@@ -269,4 +269,4 @@ if __name__ == '__main__':
     if elapsed_time < 60:
         print ("elapsed_time:{0}".format(elapsed_time) + "[sec]")
 
-    model.save('model_64_10fold.h5')
+    model.save('th2_100.h5')
