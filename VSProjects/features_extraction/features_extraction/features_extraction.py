@@ -4,6 +4,7 @@
 
 import cv2
 
+import matplotlib.pyplot as plt
 import numpy as np
 import math
 import time
@@ -49,16 +50,88 @@ def createFlag(img,v_split,h_split,predict_results,split_size=128):
 
     return flag_img
 
-#calculate coordinate of circle
-def getCircleXY(radius,center_x,center_y):
+def swap(n1,n2):
 
-    X_up = np.arange(center_x - radius, center_x + radius + 1)
-    X = np.append(X_up,X_up[1:len(X_up)-1])
-    Y_up = np.sqrt(radius**2 - (X_up-center_x)**2) + center_y
-    Y_down = -Y_up + 2*center_y
-    Y = np.append(Y_up,Y_down[1:len(Y_down)-1])
+    return [n2,n1]
+
+#calculate line with the Bresenham algorithm
+def getLineXY(start,end):
+    #start=[x1,y1],end=[x2,y2]
+
+    lineX = []
+    lineY = []
+    start_tmp = start[:]
+    end_tmp = end[:]
+
+    steep = abs(end[1]-start[1]) > abs(end[0]-start[0])
+    if steep:
+        start = swap(start[0],start[1])
+        end = swap(end[0],end[1])
+
+    if start[0] > end[0]:
+        _x0 = int(start[0])
+        _x1 = int(end[0])
+        start[0] = _x1
+        end[0] = _x0
+
+        _y0 = int(start[1])
+        _y1 = int(end[1])
+        start[1] = _y1
+        end[1] = _y0
+
+    dx = end[0] - start[0]
+    dy = abs(end[1] - start[1])
+    error = 0
+    derr = dy/float(dx)
+
+    ystep = 0
+    y = start[1]
+
+    if start[1] < end[1]: ystep = 1
+    else: ystep = -1
+
+    for x in range(int(start[0]),int(end[0])+1):
+        if steep:
+            lineX.append(y)
+            lineY.append(x)
+        else:
+            lineX.append(x)
+            lineY.append(y)
+
+        error += derr
+
+        if error >= 0.5:
+            y += ystep
+            error -= 1.0
+
+    #align the starting point
+    dist1 = np.sqrt((lineX[0]-start_tmp[0])**2 + (lineY[0]-start_tmp[1])**2)
+    dist2 = np.sqrt((lineX[-1]-start_tmp[0])**2 + (lineY[-1]-start_tmp[1])**2)
+    if dist1 > dist2 :
+        lineX.reverse()
+        lineY.reverse()
+
+    return (np.array(lineX),np.array(lineY))
+
+#calculate coordinate of circle
+def getCircleXY(radius,center_x,center_y,n_points=720):
+
+    theta = np.arange(0, 2 * np.pi, (2 * np.pi)/n_points)
+
+    X =center_x + radius * np.sin(theta)
+    Y =center_y + radius * np.cos(theta)
 
     return (X,Y) #X,Y are numpy array
+
+#def getCircleXY(radius,center_x,center_y):
+#
+#    X_up = np.arange(center_x - radius, center_x + radius + 1)
+#    X = np.append(X_up,X_up[1:len(X_up)-1])
+#    Y_up = np.sqrt(radius**2 - (X_up-center_x)**2) + center_y
+#    Y_down = -Y_up + 2*center_y
+#    Y = np.append(Y_up,Y_down[1:len(Y_down)-1])
+#
+#    return (X,Y) #X,Y are numpy array
 
 #obtain edges of the annual rings
 #60,60
@@ -94,54 +167,42 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
     img_c = cv2.cvtColor(img_copy,cv2.COLOR_GRAY2BGR)
 
     for outerx,outery in list(zip(outerX,outerY)):
-        if(center_x-outerx != 0): #not to divide by 0(intersept)
-            if (outerx > center_x):
-                X = np.arange(center_x, outerx+0.1,0.1)
-            if(outerx < center_x):
-                X_rev = np.arange(outerx,center_x+0.1,0.1)
-                X = X_rev[::-1]
+        
+        (X,Y) = getLineXY([center_x,center_y],[outerx,outery])
+        X[X >= im_width] = im_width - 1
+        Y[Y >= im_height] = im_height - 1
+        same_line_flag = False
 
-            intersept = (center_y - outery) / (center_x - outerx)
-            Y = intersept*(X-center_x)+center_y
-            same_line_flag = False
+        for x,y in list(zip(X,Y)):
+            
+            img_c[y,x,1]=255
 
-            #np.clip(X,None,im_width-10)
-            #np.clip(Y, None, im_height-10)
+            if(img[y,x] != 0):
+                if(same_line_flag == False):
+                    ring_nums[line_index] += 1
+                    ring_pos.append((x,y))
 
-            X[X >= im_width] = im_width - 1
-            Y[Y >= im_height] = im_height - 1
+                    same_line_flag = True
+            else:
+                same_line_flag = False
 
-            if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
-                for x,y in list(zip(X,Y)):
-                   
-                    img_c[math.floor(y),math.floor(x),2]=255
+        if(len(ring_pos) >= 2):
+            sum = 0
+            for i in range(len(ring_pos)-1):
+                sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+            ar_array.append(sum/(len(ring_pos)-1))
 
-                    if(img[math.floor(y),math.floor(x)] != 0):
-                        if(same_line_flag == False):
-                            ring_nums[line_index] += 1
-                            ring_pos.append((x,y))
+        if(len(ring_pos) >= 15):
+            sum = 0
+            for i in range(14):
+                sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+            ac15_array.append(sum/14)
 
-                            same_line_flag = True
-                    else:
-                        same_line_flag = False
-
-                if(len(ring_pos) >= 2):
-                    sum = 0
-                    for i in range(len(ring_pos)-1):
-                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
-                    ar_array.append(sum/(len(ring_pos)-1))
-
-                if(len(ring_pos) >= 15):
-                    sum = 0
-                    for i in range(14):
-                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
-                    ac15_array.append(sum/14)
-
-                    ring_pos_rev = ring_pos[::-1]
-                    sum = 0
-                    for i in range(14):
-                        sum += math.sqrt(((ring_pos_rev[i+1])[0] - (ring_pos_rev[i])[0]) ** 2 + ((ring_pos_rev[i+1])[1] - (ring_pos_rev[i])[1]) ** 2)
-                    ao15_array.append(sum/14)
+            ring_pos_rev = ring_pos[::-1]
+            sum = 0
+            for i in range(14):
+                sum += math.sqrt(((ring_pos_rev[i+1])[0] - (ring_pos_rev[i])[0]) ** 2 + ((ring_pos_rev[i+1])[1] - (ring_pos_rev[i])[1]) ** 2)
+            ao15_array.append(sum/14)
         
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
@@ -163,15 +224,113 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
     print("NR(floor):{}".format(NR))
     nr_std = np.std(ring_nums[np.nonzero(ring_nums)])
     print("NR(float):{:.2f}(±{:.2f})".format(ring_nums[np.nonzero(ring_nums)].mean(),nr_std))
-    #print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
-    #count = np.bincount(ring_nums[np.nonzero(ring_nums)])
-    #ans = np.argmax(count)
-    #print("NR(mode):{}".format(ans))
     print("AR:{:.2f}px".format(AR))
     print("AC15:{:.2f}px".format(AC15))
     print("AO15:{:.2f}px".format(AO15))
 
     return NR,AR,AC15,AO15
+
+#def calcFeatures(img,center_x,center_y,outerX,outerY):
+    #---------------------------------------------
+    #NR  :number of annual rings
+    #AR  :average of every ring(px)
+    #AC15:average width of 15th from the center(px)
+    #AO15: average width of 15th from the outside(px)
+    #img : assumed edge image
+    #ring_nums[line_index] : ring num of "line_index" th line
+    #---------------------------------------------
+#    ring_nums = np.zeros_like(outerX)
+#    ring_widths = []
+#    ring_pos = [] #ring positions
+#    ac15_array = []
+#    ao15_array = []
+#    ar_array = []
+#    line_index = 0
+#    dist_th = 1.5 #distance threshold
+#    im_height,im_width = img.shape
+
+#    img_copy = np.copy(img)
+#    img_c = cv2.cvtColor(img_copy,cv2.COLOR_GRAY2BGR)
+
+#    for outerx,outery in list(zip(outerX,outerY)):
+#        if(center_x-outerx != 0): #not to divide by 0(intersept)
+#            if (outerx > center_x):
+#                X = np.arange(center_x, outerx+0.1,0.1)
+#            if(outerx < center_x):
+#                X_rev = np.arange(outerx,center_x+0.1,0.1)
+#                X = X_rev[::-1]
+
+#            intersept = (center_y - outery) / (center_x - outerx)
+#            Y = intersept*(X-center_x)+center_y
+#            same_line_flag = False
+
+            #np.clip(X,None,im_width-10)
+            #np.clip(Y, None, im_height-10)
+
+#            X[X >= im_width] = im_width - 1
+#            Y[Y >= im_height] = im_height - 1
+
+#            if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
+#                for x,y in list(zip(X,Y)):
+                   
+#                    img_c[math.floor(y),math.floor(x),2]=255
+
+#                    if(img[math.floor(y),math.floor(x)] != 0):
+#                        if(same_line_flag == False):
+#                            ring_nums[line_index] += 1
+#                           ring_pos.append((x,y))
+
+#                            same_line_flag = True
+#                    else:
+#                        same_line_flag = False
+
+#                if(len(ring_pos) >= 2):
+#                    sum = 0
+#                    for i in range(len(ring_pos)-1):
+#                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+#                    ar_array.append(sum/(len(ring_pos)-1))
+
+#                if(len(ring_pos) >= 15):
+#                    sum = 0
+#                    for i in range(14):
+#                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
+#                    ac15_array.append(sum/14)
+
+#                    ring_pos_rev = ring_pos[::-1]
+#                    sum = 0
+#                    for i in range(14):
+#                        sum += math.sqrt(((ring_pos_rev[i+1])[0] - (ring_pos_rev[i])[0]) ** 2 + ((ring_pos_rev[i+1])[1] - (ring_pos_rev[i])[1]) ** 2)
+#                    ao15_array.append(sum/14)
+        
+#        ring_pos = [] #reset ring_pos
+#        line_index += 1 #next line
+
+#    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
+#    cv2.imshow("img_c",img_c)
+#    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
+#    cv2.waitKey(0)
+
+#    NR,AR,AC15,AO15 = 0,0,0,0
+#    if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
+#    if(len(ar_array) > 0):AR = np.array(ar_array).mean()
+#    if(len(ac15_array) > 0):AC15 = np.array(ac15_array).mean()
+#    if(len(ao15_array) > 0):AO15 = np.array(ao15_array).mean()
+
+#    print("-result--------")
+#    print("ring_nums:")
+#    print(ring_nums[np.nonzero(ring_nums)])
+#    print("NR(floor):{}".format(NR))
+#    nr_std = np.std(ring_nums[np.nonzero(ring_nums)])
+#    print("NR(float):{:.2f}(±{:.2f})".format(ring_nums[np.nonzero(ring_nums)].mean(),nr_std))
+    #print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
+    #count = np.bincount(ring_nums[np.nonzero(ring_nums)])
+    #ans = np.argmax(count)
+    #print("NR(mode):{}".format(ans))
+#    print("AR:{:.2f}px".format(AR))
+#    print("AC15:{:.2f}px".format(AC15))
+#    print("AO15:{:.2f}px".format(AO15))
+
+#    return NR,AR,AC15,AO15
 
 #main function of this module
 def extractFeature(img,center_x,center_y,radius,model):
@@ -198,7 +357,9 @@ def extractFeature(img,center_x,center_y,radius,model):
     #print(predictions)
 
     flat=predictions.flatten()
-    predict_results = np.where(flat>=0.5,1,0)
+    low_noise = 1
+    high_noise = 0
+    predict_results = np.where(flat>=0.5,low_noise,high_noise)
 
     #predict_results = predictions.argmax(axis=1) #result list of classification
     print("debug> predict_results:{}".format(predict_results))
@@ -219,19 +380,21 @@ def extractFeature(img,center_x,center_y,radius,model):
     dist_th = 1.5
     for outerx,outery in list(zip(outerX,outerY)):
 
-        if(center_x-outerx != 0): #intersept is not infinity
-            if (outerx > center_x):
-                X = np.arange(center_x, outerx+0.1,0.1)
-            if(outerx < center_x):
-                X = np.arange(outerx,center_x+0.1,0.1)
+        #if(center_x-outerx != 0): #intersept is not infinity
+        #    if (outerx > center_x):
+        #        X = np.arange(center_x, outerx+0.1,0.1)
+        #    if(outerx < center_x):
+        #        X = np.arange(outerx,center_x+0.1,0.1)
 
-            intersept = (center_y - outery) / (center_x - outerx)
-            Y = intersept*(X-center_x)+center_y
+        #    intersept = (center_y - outery) / (center_x - outerx)
+        #    Y = intersept*(X-center_x)+center_y
+        (X,Y) = getLineXY([center_x,center_y],[outerx,outery])
 
-            if(abs(Y[0]-Y[1]) < dist_th): #distance between the points is not too large
-                for x,y in list(zip(X,Y)):
-                    if(flag_img[math.ceil(y),math.ceil(x)] != 0):
-                        line_values[line_index] += 1
+        for x,y in list(zip(X,Y)):
+            #if(flag_img[math.ceil(y),math.ceil(x)] != 0):
+            if(flag_img[math.ceil(y),math.ceil(x)] != 0):
+                line_values[line_index] += 1
+
         line_index += 1
 
     #get good line indexes(prototype criteria)
@@ -267,6 +430,7 @@ def extractByTraditional(img,center_x,center_y,radius):
     print("debug> mode:traditional method")
 
     #get coordinate of outer wood
+    #(outerX,outerY) = getCircleXY(radius,center_x,center_y)
     (outerX,outerY) = getCircleXY(radius,center_x,center_y)
 
     #1.obtain edge image
