@@ -1,6 +1,6 @@
 #for Features extraction of wood
-#import tensorflow as tf
-#from tensorflow import keras
+import tensorflow as tf
+from tensorflow import keras
 
 import cv2
 
@@ -136,7 +136,7 @@ def getCircleXY(radius,center_x,center_y,n_points=720):
 #obtain edges of the annual rings
 #60,60
 #0p01=80,80
-def obtainEdges(img,minVal=80,maxVal=80,filter_size=3):
+def obtainEdges(img,minVal=90,maxVal=90,filter_size=3):
     #minVal=100,maxVal=200,filter_size=3
 
     print("debug> Canny param:minVal={},maxVal={}".format(minVal,maxVal))
@@ -207,11 +207,11 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
 
-    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow("img_c",img_c)
-    cv2.imwrite(r'C:\Users\sirim\Pictures\fe_result\line.tif',img_c)
-    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
-    cv2.waitKey(0)
+    #cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow("img_c",img_c)
+    #cv2.imwrite(r'C:\Users\sirim\Pictures\fe_result\line.tif',img_c)
+    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
+    #cv2.waitKey(0)
 
     NR,AR,AC15,AO15 = 0,0,0,0
     if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
@@ -348,8 +348,9 @@ def extractFeature(img,center_x,center_y,radius,model):
     #    cv2.waitKey(0)
 
     #prediction using model
-    for i in range(len(splited_imgs)):
-        ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
+    #for i in range(len(splited_imgs)):
+        #splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
+        #ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
         #cv2.imshow('im',splited_imgs[i])
         #cv2.waitKey(0)
     splited_imgs = splited_imgs / 255.0
@@ -379,6 +380,7 @@ def extractFeature(img,center_x,center_y,radius,model):
     line_values = np.zeros_like(outerX)
     line_index = 0
     dist_th = 1.5
+    im_height,im_width = flag_img.shape
     for outerx,outery in list(zip(outerX,outerY)):
 
         #if(center_x-outerx != 0): #intersept is not infinity
@@ -390,6 +392,8 @@ def extractFeature(img,center_x,center_y,radius,model):
         #    intersept = (center_y - outery) / (center_x - outerx)
         #    Y = intersept*(X-center_x)+center_y
         (X,Y) = getLineXY([center_x,center_y],[outerx,outery])
+        X[X >= im_width] = im_width - 1
+        Y[Y >= im_height] = im_height - 1
 
         for x,y in list(zip(X,Y)):
             #if(flag_img[math.ceil(y),math.ceil(x)] != 0):
@@ -414,10 +418,10 @@ def extractFeature(img,center_x,center_y,radius,model):
     #----------------------------------------------------------------------------
     img_edge = obtainEdges(img_tmp)
 
-    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow('img_edge',img_edge)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow('img_edge',img_edge)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #----------------------------------------------------------------------------
     #---3.calculate features-----------------------------------------------------------
@@ -437,11 +441,11 @@ def extractByTraditional(img,center_x,center_y,radius):
     #1.obtain edge image
     img_edge = obtainEdges(img)
 
-    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow('img_edge',img_edge)
-    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\img_edge.tif',img_edge)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow('img_edge',img_edge)
+    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\img_edge.tif',img_edge)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #2.calculate feature
     NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,outerX[::10],outerY[::10])
@@ -454,6 +458,65 @@ if __name__ == '__main__':
     import sys 
     import pathlib
     #sys.exit()
+
+    #sequential extraction
+    #50708,50716,B28604,B28616,B46404,B46408,B46412,B46808,B46816
+    GT_NR=  [41,34,38,23,45,39,36,42,25]
+    GT_AR=  [0.253658537,0.219117647,0.325,0.339130435,0.244444444,0.242307692,0.227777778,0.283333333,0.328]
+    GT_AC15=[0.452222222,0.316666667,0.4975,0.360833333,0.411111111,0.38,0.354444444,0.488333333,0.410833333]
+    GT_AO15=[0.1,0.143333333,0.223333333,0.256666667,0.148333333,0.151111111,0.126666667,0.07,0.253333333]
+
+    pxPerCm=[65.03,82.60,53,82.02,53,63.03,70.02,54,68.06]
+
+    EX_NR=[]
+    EX_AR=[]
+    EX_AC15=[]
+    EX_AO15=[]
+
+    rootPath = pathlib.Path(r'E:\traning_data(murakami)\experiment_photo_folder')
+    fp_list = list(rootPath.glob('*'))
+    photo=0
+    for fp in fp_list:
+        load_img_c = cv2.imread(str(fp))
+        img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
+        _,_,load_img = cv2.split(img_hsv)
+
+        blur = cv2.medianBlur(load_img,5)
+        cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
+        circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
+                                param1=100,param2=50,minRadius=400,maxRadius=900)
+        circles = np.uint16(np.around(circles))
+        for i in circles[0,:]:
+            # draw the outer circle
+            cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+            # draw the center of the circle
+            cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+
+        NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
+        #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
+
+        EX_NR.append(NR)
+        EX_AR.append(AR/pxPerCm[photo])
+        EX_AC15.append(AC15/pxPerCm[photo])
+        EX_AO15.append(AO15/pxPerCm[photo])
+        photo+=1
+
+    NR_RMSE=np.sqrt(np.mean((np.array(GT_NR)-np.array(EX_NR))**2))
+    AR_RMSE=np.sqrt(np.mean((np.array(GT_AR)-np.array(EX_AR))**2))
+    AC15_RMSE=np.sqrt(np.mean((np.array(GT_AC15)-np.array(EX_AC15))**2))
+    AO15_RMSE=np.sqrt(np.mean((np.array(GT_AO15)-np.array(EX_AO15))**2))
+
+    print("-result--------")
+    print("NR_RMSE:{:.2f}".format(NR_RMSE))
+    print("AR_RMSE:{:.2f}".format(AR_RMSE))
+    print("AC15_RMSE:{:.2f}".format(AC15_RMSE))
+    print("AO15_RMSE:{:.2f}".format(AO15_RMSE))
+
+    sys.exit()
+
+
 
     load_img_c = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised_lm0p01\B46404.tif")
     img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
@@ -534,26 +597,4 @@ if __name__ == '__main__':
     #plt.grid(color="0.8")
     #plt.show() # 画面に表示
 
-    #for outerx,outery in list(zip(outerX[::10],outerY[::10])):
-    #    if(center_x-outerx != 0):
-    #        if (outerx > center_x):
-    #            X = np.arange(center_x, outerx+0.1,0.1)
-    #        if(outerx < center_x):
-    #            X = np.arange(outerx,center_x+0.1,0.1)
-
-    #        intersept = (center_y - outery) / (center_x - outerx)
-            
-    #        Y = intersept*(X-center_x)+center_y
-    #        if(Y.max() >= 1200): print(Y)
-
-            #if(outery>center_y):np.clip(Y, None, outery)
-            #else: np.clip(Y,outery, None)
-
-    #        plt.plot(X, Y,marker='.',linestyle='None')
-
-    #plt.axis("equal")
-    #plt.grid(color="0.8")
-    #plt.show() # 画面に表示
-
-    #cv2.imshow("result",img_edge)
-    #cv2.waitKey(0)
+   
