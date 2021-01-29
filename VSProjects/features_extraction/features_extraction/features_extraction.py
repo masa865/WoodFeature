@@ -209,6 +209,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 
     cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
     cv2.imshow("img_c",img_c)
+    cv2.imwrite(r'C:\Users\sirim\Pictures\fe_result\line.tif',img_c)
     cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
     cv2.waitKey(0)
 
