@@ -139,6 +139,7 @@ def gridSearch(train_data,train_label,test_data,test_label,
                                             # create model
                                             model = getModel(ac,ou1,ou2,ou3,ou4)
 
+                                           
                                             model.compile(optimizer=op,
                                                     loss='binary_crossentropy',
                                                     metrics=['accuracy'])
