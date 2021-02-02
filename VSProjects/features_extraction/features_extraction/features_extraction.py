@@ -136,7 +136,7 @@ def getCircleXY(radius,center_x,center_y,n_points=720):
 #obtain edges of the annual rings
 #60,60
 #0p01=80,80
-def obtainEdges(img,minVal=90,maxVal=90,filter_size=3):
+def obtainEdges(img,minVal=130,maxVal=130,filter_size=3):
     #minVal=100,maxVal=200,filter_size=3
 
     print("debug> Canny param:minVal={},maxVal={}".format(minVal,maxVal))
@@ -348,11 +348,13 @@ def extractFeature(img,center_x,center_y,radius,model):
     #    cv2.waitKey(0)
 
     #prediction using model
-    #for i in range(len(splited_imgs)):
-        #splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
-        #ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
+    for i in range(len(splited_imgs)):
         #cv2.imshow('im',splited_imgs[i])
         #cv2.waitKey(0)
+        #splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
+        ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
+        cv2.imshow('im',splited_imgs[i])
+        cv2.waitKey(0)
     splited_imgs = splited_imgs / 255.0
     splited_imgs = splited_imgs.reshape(-1,128,128,1)
     predictions = model.predict(splited_imgs)
@@ -426,7 +428,10 @@ def extractFeature(img,center_x,center_y,radius,model):
     #----------------------------------------------------------------------------
     #---3.calculate features-----------------------------------------------------------
     #----------------------------------------------------------------------------
-    NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,good_outerX,good_outerY)
+    if(np.sum(good_line_indexes) != 0):
+        NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,good_outerX,good_outerY)
+    else:
+        NR,AR,AC15,AO15 = calcFeatures(img_edge,center_x,center_y,outerX[::10],outerY[::10])
 
     return NR,AR,AC15,AO15
 
@@ -461,12 +466,14 @@ if __name__ == '__main__':
 
     #sequential extraction
     #50708,50716,B28604,B28616,B46404,B46408,B46412,B46808,B46816
-    GT_NR=  [41,34,38,23,45,39,36,42,25]
-    GT_AR=  [0.253658537,0.219117647,0.325,0.339130435,0.244444444,0.242307692,0.227777778,0.283333333,0.328]
-    GT_AC15=[0.452222222,0.316666667,0.4975,0.360833333,0.411111111,0.38,0.354444444,0.488333333,0.410833333]
-    GT_AO15=[0.1,0.143333333,0.223333333,0.256666667,0.148333333,0.151111111,0.126666667,0.07,0.253333333]
+    GT_NR=  [41,34,38,23,45,39,36,42]
+    GT_AR=  [0.253658537,0.219117647,0.325,0.339130435,0.244444444,0.242307692,0.227777778,0.283333333]
+    GT_AC15=[0.452222222,0.316666667,0.4975,0.360833333,0.411111111,0.38,0.354444444,0.488333333]
+    GT_AO15=[0.1,0.143333333,0.223333333,0.256666667,0.148333333,0.151111111,0.126666667,0.07]
+    GT_AC15_mean = sum(GT_AC15)/len(GT_AC15)
+    GT_AO15_mean = sum(GT_AO15)/len(GT_AO15)
 
-    pxPerCm=[65.03,82.60,53,82.02,53,63.03,70.02,54,68.06]
+    pxPerCm=[65.03,82.60,53,82.02,53,63.03,70.02,54]
 
     EX_NR=[]
     EX_AR=[]
@@ -481,10 +488,16 @@ if __name__ == '__main__':
         img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
         _,_,load_img = cv2.split(img_hsv)
 
+        #img_edge = obtainEdges(load_img,minVal=130,maxVal=130,filter_size=3)
+        #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+        #cv2.imshow("img_edge",img_edge)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+
         blur = cv2.medianBlur(load_img,5)
         cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
         circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
-                                param1=100,param2=50,minRadius=400,maxRadius=900)
+                                param1=100,param2=50,minRadius=500,maxRadius=900)
         circles = np.uint16(np.around(circles))
         for i in circles[0,:]:
             # draw the outer circle
@@ -492,10 +505,24 @@ if __name__ == '__main__':
             # draw the center of the circle
             cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
 
-        NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+        #cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
+        #cv2.imshow('detected circles',cimg)
+        #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\detected_circles.tif',cimg)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
 
+        #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+
+        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\th2_100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
-        #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
+        NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
 
         EX_NR.append(NR)
         EX_AR.append(AR/pxPerCm[photo])
@@ -510,9 +537,11 @@ if __name__ == '__main__':
 
     print("-result--------")
     print("NR_RMSE:{:.2f}".format(NR_RMSE))
-    print("AR_RMSE:{:.2f}".format(AR_RMSE))
-    print("AC15_RMSE:{:.2f}".format(AC15_RMSE))
-    print("AO15_RMSE:{:.2f}".format(AO15_RMSE))
+    print("AR_RMSE:{:.2f}cm".format(AR_RMSE))
+    print("AC15_RMSE:{:.2f}cm".format(AC15_RMSE))
+    print("AO15_RMSE:{:.2f}cm".format(AO15_RMSE))
+    print("AC15_ratio:{:.2f}%".format((AC15_RMSE/GT_AC15_mean)*100))
+    print("AO15_ratio:{:.2f}%".format((AO15_RMSE/GT_AO15_mean)*100))
 
     sys.exit()
 
