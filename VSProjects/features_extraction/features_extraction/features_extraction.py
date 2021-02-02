@@ -351,10 +351,10 @@ def extractFeature(img,center_x,center_y,radius,model):
     for i in range(len(splited_imgs)):
         #cv2.imshow('im',splited_imgs[i])
         #cv2.waitKey(0)
-        #splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
-        ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
-        cv2.imshow('im',splited_imgs[i])
-        cv2.waitKey(0)
+        splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
+        #ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
+        #cv2.imshow('im',splited_imgs[i])
+        #cv2.waitKey(0)
     splited_imgs = splited_imgs / 255.0
     splited_imgs = splited_imgs.reshape(-1,128,128,1)
     predictions = model.predict(splited_imgs)
@@ -513,14 +513,14 @@ if __name__ == '__main__':
 
         #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
-        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\otsu1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\th2_100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
-        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
+        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
         NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
 
