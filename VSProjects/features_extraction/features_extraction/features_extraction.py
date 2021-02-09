@@ -160,9 +160,11 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         Y[Y >= im_height] = im_height - 1
         same_line_flag = False
 
+        cv2.line(img_c,(center_x,center_y),(int(outerx),int(outery)),(0,0,255),thickness=3,lineType=cv2.LINE_AA)
+
         for x,y in list(zip(X,Y)):
             
-            img_c[y,x,2]=255
+            #img_c[y,x,2]=255
 
             if(img[y,x] != 0):
                 if(same_line_flag == False):
