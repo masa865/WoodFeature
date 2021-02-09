@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import time
+import sys 
+import pathlib
 
 #split image
 def splitImg(img,split_size=128):
@@ -41,8 +43,6 @@ def createFlag(img,v_split,h_split,predict_results,split_size=128):
     k = 0
     for i in range(v_split):
         for j in range(h_split):
-            #print("debug> row:({}:{})".format(i*split_size,i*split_size+split_size))
-            #print("debug> col:({}:{})".format(j*split_size,j*split_size+split_size))
             if(predict_results[j+k]):
                 flag_img[i*split_size:i*split_size+split_size,
                          j*split_size:j*split_size+split_size] = extractable_flag
@@ -123,21 +123,8 @@ def getCircleXY(radius,center_x,center_y,n_points=720):
 
     return (X,Y) #X,Y are numpy array
 
-#def getCircleXY(radius,center_x,center_y):
-#
-#    X_up = np.arange(center_x - radius, center_x + radius + 1)
-#    X = np.append(X_up,X_up[1:len(X_up)-1])
-#    Y_up = np.sqrt(radius**2 - (X_up-center_x)**2) + center_y
-#    Y_down = -Y_up + 2*center_y
-#    Y = np.append(Y_up,Y_down[1:len(Y_down)-1])
-#
-#    return (X,Y) #X,Y are numpy array
-
 #obtain edges of the annual rings
-#60,60
-#0p01=80,80
 def obtainEdges(img,minVal=130,maxVal=130,filter_size=3):
-    #minVal=100,maxVal=200,filter_size=3
 
     print("debug> Canny param:minVal={},maxVal={}".format(minVal,maxVal))
     img_edge = cv2.Canny(img,minVal,maxVal,filter_size,)
@@ -209,8 +196,6 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 
     #cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
     #cv2.imshow("img_c",img_c)
-    #cv2.imwrite(r'C:\Users\sirim\Pictures\fe_result\line.tif',img_c)
-    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
     #cv2.waitKey(0)
 
     NR,AR,AC15,AO15 = 0,0,0,0
@@ -231,149 +216,40 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 
     return NR,AR,AC15,AO15
 
-#def calcFeatures(img,center_x,center_y,outerX,outerY):
-    #---------------------------------------------
-    #NR  :number of annual rings
-    #AR  :average of every ring(px)
-    #AC15:average width of 15th from the center(px)
-    #AO15: average width of 15th from the outside(px)
-    #img : assumed edge image
-    #ring_nums[line_index] : ring num of "line_index" th line
-    #---------------------------------------------
-#    ring_nums = np.zeros_like(outerX)
-#    ring_widths = []
-#    ring_pos = [] #ring positions
-#    ac15_array = []
-#    ao15_array = []
-#    ar_array = []
-#    line_index = 0
-#    dist_th = 1.5 #distance threshold
-#    im_height,im_width = img.shape
-
-#    img_copy = np.copy(img)
-#    img_c = cv2.cvtColor(img_copy,cv2.COLOR_GRAY2BGR)
-
-#    for outerx,outery in list(zip(outerX,outerY)):
-#        if(center_x-outerx != 0): #not to divide by 0(intersept)
-#            if (outerx > center_x):
-#                X = np.arange(center_x, outerx+0.1,0.1)
-#            if(outerx < center_x):
-#                X_rev = np.arange(outerx,center_x+0.1,0.1)
-#                X = X_rev[::-1]
-
-#            intersept = (center_y - outery) / (center_x - outerx)
-#            Y = intersept*(X-center_x)+center_y
-#            same_line_flag = False
-
-            #np.clip(X,None,im_width-10)
-            #np.clip(Y, None, im_height-10)
-
-#            X[X >= im_width] = im_width - 1
-#            Y[Y >= im_height] = im_height - 1
-
-#            if(abs(Y[0]-Y[1]) < dist_th): #to prevent the dots from being too far apart
-#                for x,y in list(zip(X,Y)):
-                   
-#                    img_c[math.floor(y),math.floor(x),2]=255
-
-#                    if(img[math.floor(y),math.floor(x)] != 0):
-#                        if(same_line_flag == False):
-#                            ring_nums[line_index] += 1
-#                           ring_pos.append((x,y))
-
-#                            same_line_flag = True
-#                    else:
-#                        same_line_flag = False
-
-#                if(len(ring_pos) >= 2):
-#                    sum = 0
-#                    for i in range(len(ring_pos)-1):
-#                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
-#                    ar_array.append(sum/(len(ring_pos)-1))
-
-#                if(len(ring_pos) >= 15):
-#                    sum = 0
-#                    for i in range(14):
-#                        sum += math.sqrt(((ring_pos[i+1])[0] - (ring_pos[i])[0]) ** 2 + ((ring_pos[i+1])[1] - (ring_pos[i])[1]) ** 2)
-#                    ac15_array.append(sum/14)
-
-#                    ring_pos_rev = ring_pos[::-1]
-#                    sum = 0
-#                    for i in range(14):
-#                        sum += math.sqrt(((ring_pos_rev[i+1])[0] - (ring_pos_rev[i])[0]) ** 2 + ((ring_pos_rev[i+1])[1] - (ring_pos_rev[i])[1]) ** 2)
-#                    ao15_array.append(sum/14)
-        
-#        ring_pos = [] #reset ring_pos
-#        line_index += 1 #next line
-
-#    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
-#    cv2.imshow("img_c",img_c)
-#    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line.tif',img_c)
-#    cv2.waitKey(0)
-
-#    NR,AR,AC15,AO15 = 0,0,0,0
-#    if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
-#    if(len(ar_array) > 0):AR = np.array(ar_array).mean()
-#    if(len(ac15_array) > 0):AC15 = np.array(ac15_array).mean()
-#    if(len(ao15_array) > 0):AO15 = np.array(ao15_array).mean()
-
-#    print("-result--------")
-#    print("ring_nums:")
-#    print(ring_nums[np.nonzero(ring_nums)])
-#    print("NR(floor):{}".format(NR))
-#    nr_std = np.std(ring_nums[np.nonzero(ring_nums)])
-#    print("NR(float):{:.2f}(±{:.2f})".format(ring_nums[np.nonzero(ring_nums)].mean(),nr_std))
-    #print("NR(median):{}".format(np.median(ring_nums[np.nonzero(ring_nums)])))
-    #count = np.bincount(ring_nums[np.nonzero(ring_nums)])
-    #ans = np.argmax(count)
-    #print("NR(mode):{}".format(ans))
-#    print("AR:{:.2f}px".format(AR))
-#    print("AC15:{:.2f}px".format(AC15))
-#    print("AO15:{:.2f}px".format(AO15))
-
-#    return NR,AR,AC15,AO15
-
 #main function of this module
-def extractFeature(img,center_x,center_y,radius,model):
+def extractFeature(img,center_x,center_y,radius,model,thresh=None):
     #img:v channel of hsv
     print("debug> mode:new method")
     img_tmp = np.copy(img)
+
     #----------------------------------------------------------------------------
     #---1.extract Low-noise line--------------------------------------------------
     #----------------------------------------------------------------------------
     split_size = 128 #same size as model input
     splited_imgs,v_split,h_split = splitImg(img,split_size)
-    #for im in splited_imgs:
-    #    cv2.imshow('im',im)
-    #    cv2.waitKey(0)
 
     #prediction using model
-    for i in range(len(splited_imgs)):
-        #cv2.imshow('im',splited_imgs[i])
-        #cv2.waitKey(0)
-        splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
-        #ret2,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
-        #cv2.imshow('im',splited_imgs[i])
-        #cv2.waitKey(0)
+    if(thresh != None):
+        if(thresh == 'otsu'):
+            for i in range(len(splited_imgs)):
+                _,splited_imgs[i] = cv2.threshold(splited_imgs[i],0,255,cv2.THRESH_OTSU)
+        if(thresh == 'adaptive'):
+            for i in range(len(splited_imgs)):
+                splited_imgs[i] = cv2.adaptiveThreshold(splited_imgs[i],255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,31,2)
+
     splited_imgs = splited_imgs / 255.0
     splited_imgs = splited_imgs.reshape(-1,128,128,1)
     predictions = model.predict(splited_imgs)
-    #print(predictions)
 
     flat=predictions.flatten()
     low_noise = 1
     high_noise = 0
     predict_results = np.where(flat>=0.5,low_noise,high_noise)
 
-    #predict_results = predictions.argmax(axis=1) #result list of classification
     print("debug> predict_results:{}".format(predict_results))
 
     #create flag image
     flag_img = createFlag(img,v_split,h_split,predict_results,split_size)
-
-    #cv2.namedWindow('flag_img', cv2.WINDOW_KEEPRATIO)
-    #cv2.imshow('flag_img',flag_img)
-    #cv2.waitKey(0)
 
     #get coordinate of outer wood
     (outerX,outerY) = getCircleXY(radius,center_x,center_y)
@@ -385,29 +261,18 @@ def extractFeature(img,center_x,center_y,radius,model):
     im_height,im_width = flag_img.shape
     for outerx,outery in list(zip(outerX,outerY)):
 
-        #if(center_x-outerx != 0): #intersept is not infinity
-        #    if (outerx > center_x):
-        #        X = np.arange(center_x, outerx+0.1,0.1)
-        #    if(outerx < center_x):
-        #        X = np.arange(outerx,center_x+0.1,0.1)
-
-        #    intersept = (center_y - outery) / (center_x - outerx)
-        #    Y = intersept*(X-center_x)+center_y
         (X,Y) = getLineXY([center_x,center_y],[outerx,outery])
         X[X >= im_width] = im_width - 1
         Y[Y >= im_height] = im_height - 1
 
         for x,y in list(zip(X,Y)):
-            #if(flag_img[math.ceil(y),math.ceil(x)] != 0):
             if(flag_img[math.ceil(y),math.ceil(x)] != 0):
                 line_values[line_index] += 1
 
         line_index += 1
 
-    #get good line indexes(prototype criteria)
-    #print("line_values:{}".format(line_values))
+    #get good line indexes
     good_line_indexes = np.where(line_values > (radius//10))[0]
-    #print("radius 10:{}".format(radius//10))
 
     good_outerX = []
     good_outerY = []
@@ -436,11 +301,9 @@ def extractFeature(img,center_x,center_y,radius,model):
     return NR,AR,AC15,AO15
 
 def extractByTraditional(img,center_x,center_y,radius):
-    #img:v channel of hsv
     print("debug> mode:traditional method")
 
     #get coordinate of outer wood
-    #(outerX,outerY) = getCircleXY(radius,center_x,center_y)
     (outerX,outerY) = getCircleXY(radius,center_x,center_y)
 
     #1.obtain edge image
@@ -448,7 +311,6 @@ def extractByTraditional(img,center_x,center_y,radius):
 
     #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
     #cv2.imshow('img_edge',img_edge)
-    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\img_edge.tif',img_edge)
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
 
@@ -459,10 +321,6 @@ def extractByTraditional(img,center_x,center_y,radius):
 
 #test code for this module
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    import sys 
-    import pathlib
-    #sys.exit()
 
     #sequential extraction
     #50708,50716,B28604,B28616,B46404,B46408,B46412,B46808,B46816
@@ -472,7 +330,6 @@ if __name__ == '__main__':
     GT_AO15=[0.1,0.143333333,0.223333333,0.256666667,0.148333333,0.151111111,0.126666667,0.07]
     GT_AC15_mean = sum(GT_AC15)/len(GT_AC15)
     GT_AO15_mean = sum(GT_AO15)/len(GT_AO15)
-
     pxPerCm=[65.03,82.60,53,82.02,53,63.03,70.02,54]
 
     EX_NR=[]
@@ -507,7 +364,6 @@ if __name__ == '__main__':
 
         #cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
         #cv2.imshow('detected circles',cimg)
-        #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\detected_circles.tif',cimg)
         #cv2.waitKey(0)
         #cv2.destroyAllWindows()
 
@@ -517,12 +373,11 @@ if __name__ == '__main__':
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\otsu1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
-        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\th2_100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
-        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
-        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
-        NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
+        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
+        NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh=None)
 
         EX_NR.append(NR)
         EX_AR.append(AR/pxPerCm[photo])
@@ -547,22 +402,22 @@ if __name__ == '__main__':
 
 
 
-    load_img_c = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised_lm0p01\B46404.tif")
-    img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
-    img_h,img_s,load_img = cv2.split(img_hsv)
+    #load_img_c = cv2.imread(r"C:\Users\sirim\Pictures\indoor_denoised_lm0p01\B46404.tif")
+    #img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
+    #img_h,img_s,load_img = cv2.split(img_hsv)
     #load_img = cv2.imread(r"E:\traning_data(murakami)\49804.tif",0)
     #load_img = cv2.imread(r"E:\traning_data(murakami)\DSC_0573_g.tif",0)
-    cv2.namedWindow('load_img', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow("load_img",load_img)
-    cv2.waitKey(0)
+    #cv2.namedWindow('load_img', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow("load_img",load_img)
+    #cv2.waitKey(0)
     #cv2.destroyAllWindows()
 
 
-    img_edge = obtainEdges(load_img,minVal=80,maxVal=80,filter_size=3)
-    cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow("img_edge",img_edge)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #img_edge = obtainEdges(load_img,minVal=80,maxVal=80,filter_size=3)
+    #cv2.namedWindow('img_edge', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow("img_edge",img_edge)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #sys.exit()
 
@@ -570,7 +425,7 @@ if __name__ == '__main__':
 
 
     #load_img,172,185,308-160
-    blur = cv2.medianBlur(load_img,5)
+    #blur = cv2.medianBlur(load_img,5)
     #cimg = obtainEdges(blur,minVal=50,maxVal=100,filter_size=3)
     #cv2.namedWindow('detected circles', cv2.WINDOW_NORMAL)
     #cv2.imshow('detected circles',cimg)
@@ -580,31 +435,31 @@ if __name__ == '__main__':
     #sys.exit()
 
     #49804.tif (blur,cv2.HOUGH_GRADIENT,1,500,param1=100,param2=50,minRadius=500,maxRadius=900)
-    cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
-    circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
-                            param1=100,param2=50,minRadius=400,maxRadius=900)
-    circles = np.uint16(np.around(circles))
-    for i in circles[0,:]:
+    #cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
+    #circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
+    #                        param1=100,param2=50,minRadius=400,maxRadius=900)
+    #circles = np.uint16(np.around(circles))
+    #for i in circles[0,:]:
         # draw the outer circle
-        cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+    #    cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
         # draw the center of the circle
-        cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+    #    cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
 
-    print("width:{},height:{}".format(load_img.shape[1],load_img.shape[0]))
-    print("center:({},{})".format(i[0],i[1]))
-    print("radius:{}px".format(i[2]))
-    cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
-    cv2.imshow('detected circles',cimg)
-    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\detected_circles.tif',cimg)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #print("width:{},height:{}".format(load_img.shape[1],load_img.shape[0]))
+    #print("center:({},{})".format(i[0],i[1]))
+    #print("radius:{}px".format(i[2]))
+    #cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
+    #cv2.imshow('detected circles',cimg)
+    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\detected_circles.tif',cimg)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
     #sys.exit()
 
-    start =time.time()
-    NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
-    elapsed_time =time.time()-start
-    print("elapsed_time:{}".format(elapsed_time)+"[sec]")
+    #start =time.time()
+    #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+    #elapsed_time =time.time()-start
+    #print("elapsed_time:{}".format(elapsed_time)+"[sec]")
 
     #load_img = cv2.adaptiveThreshold(load_img,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,
     #                                 31,2)
@@ -616,14 +471,5 @@ if __name__ == '__main__':
     #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model)
     #elapsed_time =time.time()-start
     #print("elapsed_time:{}".format(elapsed_time)+"[sec]")
-
-    #center_x = i[0]
-    #center_y = i[1]
-    #(outerX,outerY) = getCircleXY(i[2],center_x,center_y)
-    #plt.plot(outerX, outerY,marker='.',linestyle='None')
-
-    #plt.axis("equal")
-    #plt.grid(color="0.8")
-    #plt.show() # 画面に表示
 
    
