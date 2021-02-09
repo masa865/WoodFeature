@@ -162,7 +162,7 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
 
         for x,y in list(zip(X,Y)):
             
-            img_c[y,x,1]=255
+            img_c[y,x,2]=255
 
             if(img[y,x] != 0):
                 if(same_line_flag == False):
@@ -194,9 +194,10 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
 
-    #cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
-    #cv2.imshow("img_c",img_c)
-    #cv2.waitKey(0)
+    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
+    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line_trad.tif',img_c)
+    cv2.imshow("img_c",img_c)
+    cv2.waitKey(0)
 
     NR,AR,AC15,AO15 = 0,0,0,0
     if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
@@ -367,7 +368,7 @@ if __name__ == '__main__':
         #cv2.waitKey(0)
         #cv2.destroyAllWindows()
 
-        #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+        NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
@@ -376,8 +377,8 @@ if __name__ == '__main__':
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\th2_100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
-        model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
-        NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh=None)
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
+        #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh=None)
 
         EX_NR.append(NR)
         EX_AR.append(AR/pxPerCm[photo])
