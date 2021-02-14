@@ -1,6 +1,6 @@
 #for Features extraction of wood
-import tensorflow as tf
-from tensorflow import keras
+#import tensorflow as tf
+#from tensorflow import keras
 
 import cv2
 
@@ -197,7 +197,8 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         line_index += 1 #next line
 
     cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
-    cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line_trad.tif',img_c)
+    #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line_trad.tif',img_c)
+    cv2.imwrite(r'C:\Users\sirim\Pictures\feat_result\line_trad.tif',img_c)
     cv2.imshow("img_c",img_c)
     cv2.waitKey(0)
 
@@ -340,7 +341,8 @@ if __name__ == '__main__':
     EX_AC15=[]
     EX_AO15=[]
 
-    rootPath = pathlib.Path(r'E:\traning_data(murakami)\experiment_photo_folder')
+    #rootPath = pathlib.Path(r'E:\traning_data(murakami)\experiment_photo_folder')
+    rootPath = pathlib.Path(r'C:\Users\sirim\Pictures\indoor\experiment_photo')
     fp_list = list(rootPath.glob('*'))
     photo=0
     for fp in fp_list:
