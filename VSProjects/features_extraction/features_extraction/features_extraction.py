@@ -372,7 +372,7 @@ if __name__ == '__main__':
         #cv2.waitKey(0)
         #cv2.destroyAllWindows()
 
-        #NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+        NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
 
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
