@@ -9,6 +9,8 @@ import numpy as np
 import math
 import time
 import sys 
+import csv
+import os
 import pathlib
 
 #split image
@@ -196,11 +198,11 @@ def calcFeatures(img,center_x,center_y,outerX,outerY):
         ring_pos = [] #reset ring_pos
         line_index += 1 #next line
 
-    cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
+    #cv2.namedWindow('img_c', cv2.WINDOW_KEEPRATIO)
     #cv2.imwrite(r'C:\Users\VIgpu01\Pictures\fe_result\line_trad.tif',img_c)
-    cv2.imwrite(r'C:\Users\sirim\Pictures\feat_result\line_trad.tif',img_c)
-    cv2.imshow("img_c",img_c)
-    cv2.waitKey(0)
+    #cv2.imwrite(r'C:\Users\sirim\Pictures\feat_result\line_trad.tif',img_c)
+    #cv2.imshow("img_c",img_c)
+    #cv2.waitKey(0)
 
     NR,AR,AC15,AO15 = 0,0,0,0
     if(len(ring_nums) > 0):NR = np.floor(ring_nums[np.nonzero(ring_nums)].mean())
@@ -276,7 +278,7 @@ def extractFeature(img,center_x,center_y,radius,model,thresh=None):
         line_index += 1
 
     #get good line indexes
-    good_line_indexes = np.where(line_values > (radius//10))[0]
+    good_line_indexes = np.where(line_values > (radius//20))[0]
 
     good_outerX = []
     good_outerY = []
@@ -325,6 +327,98 @@ def extractByTraditional(img,center_x,center_y,radius):
 
 #test code for this module
 if __name__ == '__main__':
+
+    #---csv---
+    #usedata list
+    model_file_path=r'C:\Users\sirim\Pictures\feature_extraction\learning_result'
+    image_folder_path=r'C:\Users\sirim\Pictures\indoor\experiment_photo'
+
+    GT_NR=  [41,34,38,23,45,39,36,42]
+    GT_AR=  [0.253658537,0.219117647,0.325,0.339130435,0.244444444,0.242307692,0.227777778,0.283333333]
+    GT_AC15=[0.452222222,0.316666667,0.4975,0.360833333,0.411111111,0.38,0.354444444,0.488333333]
+    GT_AO15=[0.1,0.143333333,0.223333333,0.256666667,0.148333333,0.151111111,0.126666667,0.07]
+    GT_AC15_mean = sum(GT_AC15)/len(GT_AC15)
+    GT_AO15_mean = sum(GT_AO15)/len(GT_AO15)
+    pxPerCm=[65.03,82.60,53,82.02,53,63.03,70.02,54]
+
+    model_paths=[r'\100\before_otsu100.h5',
+                r'\100\otsu100.h5',
+                r'\100\before_th2_100.h5',
+                r'\100\th2_100.h5',
+                r'\1000\before_otsu1000.h5',
+                r'\1000\otsu1000.h5',
+                r'\1000\before_th2_1000.h5',
+                r'\1000\th2_1000.h5']
+
+
+    rootPath = pathlib.Path(image_folder_path)
+    fp_list = list(rootPath.glob('*'))
+    photo=0
+    for fp in fp_list:
+
+        if not (os.path.exists('result')):
+            os.mkdir('result')
+        path = 'result/{}.csv'.format(photo+1)
+        if os.path.exists(path):
+            os.remove(path)
+
+        with open(path,'a',newline='') as c:
+            writer = csv.writer(c)
+            writer.writerow(['NR','AR','AC15','AO15',
+                             'AC15_rmse','AO15_rmse'])
+
+        with open(path,'a',newline='') as c:
+                   writer = csv.writer(c)
+                   writer.writerow([GT_NR[photo],GT_AR[photo],GT_AC15[photo],GT_AO15[photo],
+                                     0,0])
+
+        load_img_c = cv2.imread(str(fp))
+        img_hsv = cv2.cvtColor(load_img_c, cv2.COLOR_BGR2HSV)
+        _,_,load_img = cv2.split(img_hsv)
+
+        blur = cv2.medianBlur(load_img,5)
+        cimg = np.copy(cv2.cvtColor(load_img,cv2.COLOR_GRAY2BGR))
+        circles = cv2.HoughCircles(blur,cv2.HOUGH_GRADIENT,1,500,
+                                param1=100,param2=50,minRadius=500,maxRadius=900)
+        circles = np.uint16(np.around(circles))
+        for i in circles[0,:]:
+            # draw the outer circle
+            cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+            # draw the center of the circle
+            cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+
+        #cv2.namedWindow('detected circles', cv2.WINDOW_KEEPRATIO)
+        #cv2.imshow('detected circles',cimg)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+
+        NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
+        with open(path,'a',newline='') as c:
+            writer = csv.writer(c)
+            writer.writerow([NR,AR/pxPerCm[photo],AC15/pxPerCm[photo],AO15/pxPerCm[photo],
+                         np.sqrt((GT_AC15[photo]-(AC15/pxPerCm[photo]))**2),np.sqrt((GT_AO15[photo]-(AO15/pxPerCm[photo]))**2)])
+
+        for mp in model_paths:
+            model = keras.models.load_model(model_file_path+mp)
+            if(('otsu' in mp) and ('before' not in mp)):
+                thresh='otsu'
+            if(('th2' in mp) and ('before' not in mp)):
+                thresh='adaptive'
+            if('before' in mp):
+                thresh=None
+            NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh)
+
+            #write result
+            with open(path,'a',newline='') as c:
+                    writer = csv.writer(c)
+                    writer.writerow([NR,AR/pxPerCm[photo],AC15/pxPerCm[photo],AO15/pxPerCm[photo],
+                         np.sqrt((GT_AC15[photo]-(AC15/pxPerCm[photo]))**2),np.sqrt((GT_AO15[photo]-(AO15/pxPerCm[photo]))**2)])
+
+        photo+=1
+
+    sys.exit()
+
+
 
     #sequential extraction
     #50708,50716,B28604,B28616,B46404,B46408,B46412,B46808,B46816
