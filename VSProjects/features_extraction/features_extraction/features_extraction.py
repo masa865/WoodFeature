@@ -374,6 +374,14 @@ if __name__ == '__main__':
 
         NR,AR,AC15,AO15=extractByTraditional(load_img,i[0],i[1],i[2])
 
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\th2_100.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
+        #model = keras.models.load_model(r'C:\Users\sirim\Pictures\feature_extraction\learning_result\1000\otsu1000.h5')
+        #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
 
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\otsu100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_otsu100.h5')
@@ -383,13 +391,24 @@ if __name__ == '__main__':
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\100\before_th2_100.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\th2_1000.h5')
         #model = keras.models.load_model(r'C:\Users\VIgpu01\Pictures\learning_result\1000\before_th2_1000.h5')
-        #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh=None)
+        #NR,AR,AC15,AO15=extractFeature(load_img,i[0],i[1],i[2],model,thresh='otsu')
+
+        print("this image result")
+        print("NR:{}".format(NR))
+        print("GT_NR:{}".format(GT_NR[photo]))
+        print("AR:{}cm".format(AR/pxPerCm[photo]))
+        print("GT_AR:{}cm".format(GT_AR[photo]))
+        print("AC15:{}cm".format(AC15/pxPerCm[photo]))
+        print("GT_AC15:{}cm".format(GT_AC15[photo]))
+        print("AO15:{}cm".format(AO15/pxPerCm[photo]))
+        print("GT_AO15:{}cm".format(GT_AO15[photo]))
 
         EX_NR.append(NR)
         EX_AR.append(AR/pxPerCm[photo])
         EX_AC15.append(AC15/pxPerCm[photo])
         EX_AO15.append(AO15/pxPerCm[photo])
         photo+=1
+
 
     NR_RMSE=np.sqrt(np.mean((np.array(GT_NR)-np.array(EX_NR))**2))
     AR_RMSE=np.sqrt(np.mean((np.array(GT_AR)-np.array(EX_AR))**2))
